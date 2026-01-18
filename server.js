@@ -13,6 +13,8 @@ const PORT = 3001;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public'))); // Serve uploaded files
+app.use(express.static(path.join(__dirname, 'dist'))); // Serve frontend build
 
 // Audit Log Helper
 const logAudit = (action, username, details) => {
@@ -84,6 +86,57 @@ app.get('/api/admin/logs', (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch logs' });
+    }
+});
+
+// DELETE Single Log
+app.delete('/api/admin/logs/:id', (req, res) => {
+    const { id } = req.params;
+    const logsPath = path.join(__dirname, 'src', 'data', 'audit_logs.json');
+    try {
+        if (!fs.existsSync(logsPath)) return res.status(404).json({ error: 'Logs not found' });
+
+        let logs = JSON.parse(fs.readFileSync(logsPath, 'utf8'));
+        const newLogs = logs.filter(l => l.id !== id);
+
+        if (logs.length === newLogs.length) return res.status(404).json({ error: 'Log not found' });
+
+        fs.writeFileSync(logsPath, JSON.stringify(newLogs, null, 4));
+        res.json({ success: true, message: 'Log deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete log' });
+    }
+});
+
+// DELETE All Logs (Clear)
+app.delete('/api/admin/logs', (req, res) => {
+    const logsPath = path.join(__dirname, 'src', 'data', 'audit_logs.json');
+    try {
+        fs.writeFileSync(logsPath, JSON.stringify([], null, 4));
+        // Log this action (create a new log after clearing)
+        logAudit('CLEAR_LOGS', req.body.username || 'Admin', 'Cleared all activity logs');
+        res.json({ success: true, message: 'All logs cleared' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to clear logs' });
+    }
+});
+
+// POST Batch Delete Logs
+app.post('/api/admin/logs/batch-delete', (req, res) => {
+    const { ids } = req.body;
+    const logsPath = path.join(__dirname, 'src', 'data', 'audit_logs.json');
+    try {
+        if (!fs.existsSync(logsPath)) return res.status(404).json({ error: 'Logs not found' });
+        if (!Array.isArray(ids)) return res.status(400).json({ error: 'Invalid IDs format' });
+
+        let logs = JSON.parse(fs.readFileSync(logsPath, 'utf8'));
+        const originalCount = logs.length;
+        logs = logs.filter(l => !ids.includes(l.id));
+
+        fs.writeFileSync(logsPath, JSON.stringify(logs, null, 4));
+        res.json({ success: true, message: `Deleted ${originalCount - logs.length} logs` });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to batch delete logs' });
     }
 });
 
@@ -697,6 +750,30 @@ app.put('/api/schedule/:id/cancel', (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to update schedule' });
+    }
+});
+
+// --- Routine Image Upload ---
+const routineStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadPath = path.join(__dirname, 'public');
+        if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+        cb(null, 'routine.png'); // Always overwrite same file
+    }
+});
+const routineUpload = multer({ storage: routineStorage });
+
+app.post('/api/schedule/routine', routineUpload.single('file'), (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        // Return success with timestamp to force frontend refresh
+        res.json({ success: true, timestamp: Date.now() });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to upload routine image' });
     }
 });
 

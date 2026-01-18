@@ -1,5 +1,180 @@
 [
     {
+        "id": "log-1768768533961-575",
+        "date": "2026-01-18T20:35:33.961Z",
+        "action": "UPDATE_USER",
+        "username": "Admin",
+        "details": "Updated user hmh (admin-seed)"
+    },
+    {
+        "id": "log-1768766719704-247",
+        "date": "2026-01-18T20:05:19.704Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Set cancellation to true for schedule sched-1768765353412"
+    },
+    {
+        "id": "log-1768765939990-3",
+        "date": "2026-01-18T19:52:19.990Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Computer Vision and Image Processing Laboratory"
+    },
+    {
+        "id": "log-1768765927452-211",
+        "date": "2026-01-18T19:52:07.452Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Computer Vision and Image Processing Laboratory"
+    },
+    {
+        "id": "log-1768765859157-595",
+        "date": "2026-01-18T19:50:59.157Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning Laboratory"
+    },
+    {
+        "id": "log-1768765804312-616",
+        "date": "2026-01-18T19:50:04.312Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Artificial Intelligence Laboratory"
+    },
+    {
+        "id": "log-1768765777907-817",
+        "date": "2026-01-18T19:49:37.907Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Computer Vision and Image Processing"
+    },
+    {
+        "id": "log-1768765737943-187",
+        "date": "2026-01-18T19:48:57.943Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Artifical Intelligance"
+    },
+    {
+        "id": "log-1768765674174-16",
+        "date": "2026-01-18T19:47:54.174Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Artificial Intelligence Laboratory"
+    },
+    {
+        "id": "log-1768765625126-539",
+        "date": "2026-01-18T19:47:05.126Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Information And Security Control"
+    },
+    {
+        "id": "log-1768765599398-763",
+        "date": "2026-01-18T19:46:39.398Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compailer Design"
+    },
+    {
+        "id": "log-1768765548631-832",
+        "date": "2026-01-18T19:45:48.631Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768765444575-290",
+        "date": "2026-01-18T19:44:04.575Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Information And Security Control"
+    },
+    {
+        "id": "log-1768765402694-610",
+        "date": "2026-01-18T19:43:22.694Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Computer Vision and Image Processing"
+    },
+    {
+        "id": "log-1768765321574-520",
+        "date": "2026-01-18T19:42:01.574Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768765257447-51",
+        "date": "2026-01-18T19:40:57.447Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compiler Design Laboratory"
+    },
+    {
+        "id": "log-1768765011678-920",
+        "date": "2026-01-18T19:36:51.678Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compiler Design Laboratory"
+    },
+    {
+        "id": "log-1768764962078-155",
+        "date": "2026-01-18T19:36:02.078Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compiler Design Laboratory"
+    },
+    {
+        "id": "log-1768764952858-284",
+        "date": "2026-01-18T19:35:52.858Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compiler Design Laboratory"
+    },
+    {
+        "id": "log-1768764873035-941",
+        "date": "2026-01-18T19:34:33.035Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Artifical Intelligance"
+    },
+    {
+        "id": "log-1768764731474-536",
+        "date": "2026-01-18T19:32:11.474Z",
+        "action": "CREATE_COURSE",
+        "username": "Unknown",
+        "details": "Created course CSE-4120"
+    },
+    {
+        "id": "log-1768764545225-259",
+        "date": "2026-01-18T19:29:05.225Z",
+        "action": "CREATE_COURSE",
+        "username": "Unknown",
+        "details": "Created course CSE-4118"
+    },
+    {
+        "id": "log-1768764470167-17",
+        "date": "2026-01-18T19:27:50.167Z",
+        "action": "CREATE_COURSE",
+        "username": "Unknown",
+        "details": "Created course CSE-4104"
+    },
+    {
+        "id": "log-1768764401665-759",
+        "date": "2026-01-18T19:26:41.665Z",
+        "action": "CREATE_COURSE",
+        "username": "Unknown",
+        "details": "Created course CSE-4102"
+    },
+    {
+        "id": "log-1768763919448-958",
+        "date": "2026-01-18T19:18:39.448Z",
+        "action": "UPDATE_SYLLABUS",
+        "username": "admin",
+        "details": "Updated syllabus for HUM-4151"
+    },
+    {
         "id": "log-1768758855395-980",
         "date": "2026-01-18T17:54:15.395Z",
         "action": "UPDATE_SCHEDULE",
@@ -208,20 +383,6 @@
         "action": "UPDATE_SCHEDULE",
         "username": "admin",
         "details": "Schedule event: Information And Security Control"
-    },
-    {
-        "id": "log-1768737592082-513",
-        "date": "2026-01-18T11:59:52.082Z",
-        "action": "UPDATE_SCHEDULE",
-        "username": "admin",
-        "details": "Schedule event: Event"
-    },
-    {
-        "id": "log-1768737577015-533",
-        "date": "2026-01-18T11:59:37.015Z",
-        "action": "UPDATE_SCHEDULE",
-        "username": "admin",
-        "details": "Schedule event: Event"
     },
     {
         "id": "log-1768737328588-87",

@@ -1,9 +1,9 @@
 [
     {
         "id": "admin-seed",
-        "username": "admin",
-        "password": "admin123",
-        "name": "Super Admin",
+        "username": "hmh",
+        "password": "hmh123",
+        "name": "Howlader",
         "role": "admin"
     },
     {
@@ -30,8 +30,8 @@
         "id": "1768674247509",
         "permissions": {
             "courses_edit": true,
-            "syllabus_edit": true,
-            "schedule_edit": false,
+            "syllabus_edit": false,
+            "schedule_edit": true,
             "homepage_edit": false,
             "exams_edit": false
         }

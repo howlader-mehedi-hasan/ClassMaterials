@@ -57,22 +57,21 @@
         "files": []
     },
     {
-        "id": "CSE-4116",
-        "name": "Pattern Recognition Laboratory",
-        "instructor": "ist",
-        "files": [
-            {
-                "id": "file-1768704243507-133",
-                "name": "ML UNIT-1 NOTES.pdf",
-                "type": "pdf",
-                "path": "/materials/CSE-4116/ML UNIT-1 NOTES.pdf"
-            },
-            {
-                "id": "file-1768704354556-959",
-                "name": "ANN-Lecture-1.pdf",
-                "type": "pdf",
-                "path": "/materials/CSE-4116/ANN-Lecture-1.pdf"
-            }
-        ]
+        "id": "CSE-4104",
+        "name": "Compiler Design Laboratory",
+        "instructor": "Nusrat Jahan Urme",
+        "files": []
+    },
+    {
+        "id": "CSE-4118",
+        "name": "Computer Vision and Image Processing Laboratory",
+        "instructor": "Md. Mahamudul Hasan",
+        "files": []
+    },
+    {
+        "id": "CSE-4120",
+        "name": "Machine Learning Laboratory",
+        "instructor": "Nazirul Hasan Shawon (CSE, KUET)",
+        "files": []
     }
 ]

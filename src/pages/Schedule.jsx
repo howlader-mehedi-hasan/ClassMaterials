@@ -3,9 +3,9 @@ import { useAuth } from "../contexts/AuthContext";
 import {
     Calendar as CalendarIcon, Clock, MapPin, User, ChevronLeft, ChevronRight,
     Plus, Edit, Trash2, X, Save, Settings, Filter, LayoutGrid, List, CalendarDays, Check,
-    Eye, Download
+    Eye, Download, Upload
 } from "lucide-react";
-import routineImg from '../contents/RoutineV1.png';
+// import routineImg from '../contents/RoutineV1.png'; // Removed static import
 
 // Helper to get week number for "Alter Class" logic
 const getWeekNumber = (d) => {
@@ -51,6 +51,8 @@ export default function Schedule() {
     const [visibleDays, setVisibleDays] = useState(["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]);
     const [isPrecisionMode, setIsPrecisionMode] = useState(true);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [routineUrl, setRoutineUrl] = useState("http://localhost:3001/routine.png");
+    const [uploadingRoutine, setUploadingRoutine] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -221,6 +223,36 @@ export default function Schedule() {
             });
         } else {
             setFormData({ ...formData, courseId: "", courseName: "", instructor: "" });
+        }
+    };
+
+    const handleRoutineUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!isAdmin) return alert("Unauthorized");
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        setUploadingRoutine(true);
+        try {
+            const res = await fetch("http://localhost:3001/api/schedule/routine", {
+                method: "POST",
+                body: formData
+            });
+            const data = await res.json();
+            if (res.ok) {
+                // Update URL with timestamp to force refresh
+                setRoutineUrl(`http://localhost:3001/routine.png?t=${data.timestamp}`);
+                alert("Routine updated successfully!");
+            } else {
+                alert("Failed to upload");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Error uploading file");
+        } finally {
+            setUploadingRoutine(false);
         }
     };
 
@@ -690,15 +722,41 @@ export default function Schedule() {
 
             {/* Analog Routine Section */}
             <div className="mt-16 bg-white dark:bg-slate-800 rounded-2xl p-8 border border-gray-100 dark:border-slate-700 text-center">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                    If You don't understand the Digital Dynamic Routine then the Analog one is here
-                </h2>
-                <div className="max-w-4xl mx-auto bg-gray-100 dark:bg-slate-900 rounded-xl overflow-hidden mb-8 border border-gray-200 dark:border-slate-700">
-                    <img src={routineImg} alt="Analog Routine" className="w-full h-auto opacity-90 hover:opacity-100 transition-opacity" />
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mx-auto">
+                        If You don't understand the Digital Dynamic Routine then the Analog one is here
+                    </h2>
+                    {hasPermission('schedule_edit') && (
+                        <div className="relative">
+                            <input
+                                type="file"
+                                id="routine-upload"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleRoutineUpload}
+                                disabled={uploadingRoutine}
+                            />
+                            <label
+                                htmlFor="routine-upload"
+                                className={`flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg cursor-pointer transition-colors shadow-sm ${uploadingRoutine ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                <Upload className="w-4 h-4 mr-2" />
+                                {uploadingRoutine ? 'Uploading...' : 'Update Image'}
+                            </label>
+                        </div>
+                    )}
+                </div>
+                <div className="max-w-4xl mx-auto bg-gray-100 dark:bg-slate-900 rounded-xl overflow-hidden mb-8 border border-gray-200 dark:border-slate-700 relative group">
+                    <img
+                        src={routineUrl}
+                        onError={(e) => { e.target.src = 'https://placehold.co/800x600?text=No+Routine+Image'; }}
+                        alt="Analog Routine"
+                        className="w-full h-auto opacity-90 hover:opacity-100 transition-opacity"
+                    />
                 </div>
                 <div className="flex justify-center space-x-4">
                     <a
-                        href={routineImg}
+                        href={routineUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-lg shadow-blue-600/20"
@@ -707,8 +765,8 @@ export default function Schedule() {
                         View Full Size
                     </a>
                     <a
-                        href={routineImg}
-                        download="RoutineV1.png"
+                        href={routineUrl}
+                        download="routine.png"
                         className="flex items-center px-6 py-3 bg-gray-900 hover:bg-gray-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-medium rounded-xl transition-colors shadow-lg"
                     >
                         <Download className="w-5 h-5 mr-2" />

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Github, Mail, MessageSquare, AlertCircle, Globe, Linkedin, Twitter, Heart } from "lucide-react";
+import { Github, Mail, MessageSquare, AlertCircle, Globe, Linkedin, Twitter, Heart, Facebook } from "lucide-react";
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();
@@ -23,9 +23,9 @@ export default function Footer() {
                             </p>
                         </div>
                         <div className="flex space-x-4">
-                            <SocialLink href="https://github.com/howlader-mehedi-hasan" icon={Github} label="GitHub" />
-                            <SocialLink href="#" icon={Linkedin} label="LinkedIn" />
-                            <SocialLink href="#" icon={Globe} label="Website" />
+                            <SocialLink href="https://www.facebook.com/nwu.ac.bd" icon={Facebook} label="Facebook" />
+                            <SocialLink href="https://www.linkedin.com/school/nwukhulna/" icon={Linkedin} label="LinkedIn" />
+                            <SocialLink href="https://nwu.ac.bd/" icon={Globe} label="Website" />
                         </div>
                     </div>
 

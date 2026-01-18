@@ -114,6 +114,67 @@ export default function AdminDashboard() {
     // Audit Logs State
     const [auditLogs, setAuditLogs] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedLogs, setSelectedLogs] = useState([]);
+
+    const handleSelectLog = (id) => {
+        setSelectedLogs(prev =>
+            prev.includes(id) ? prev.filter(logId => logId !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAllLogs = () => {
+        if (selectedLogs.length === auditLogs.length) {
+            setSelectedLogs([]);
+        } else {
+            setSelectedLogs(auditLogs.map(l => l.id));
+        }
+    };
+
+    const handleDeleteLog = async (id) => {
+        if (!window.confirm("Delete this log entry?")) return;
+        try {
+            const res = await fetch(`http://localhost:3001/api/admin/logs/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                fetchAuditLogs();
+                setSelectedLogs(prev => prev.filter(lId => lId !== id));
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleDeleteSelectedLogs = async () => {
+        if (!window.confirm(`Delete ${selectedLogs.length} selected logs?`)) return;
+        try {
+            const res = await fetch('http://localhost:3001/api/admin/logs/batch-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedLogs })
+            });
+            if (res.ok) {
+                fetchAuditLogs();
+                setSelectedLogs([]);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleClearLogs = async () => {
+        if (!window.confirm("Clear ALL logs? This cannot be undone.")) return;
+        const password = prompt("Please enter admin password to confirm:");
+        if (password !== "admin123") return alert("Incorrect password"); // Simple check for MVP
+
+        try {
+            const res = await fetch('http://localhost:3001/api/admin/logs', { method: 'DELETE' });
+            if (res.ok) {
+                fetchAuditLogs();
+                setSelectedLogs([]);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     // User Editing State
     const [editingUser, setEditingUser] = useState(null);
@@ -1123,9 +1184,27 @@ export default function AdminDashboard() {
                     <div className="space-y-6">
                         <div className="flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">System Activity Logs</h2>
-                            <button onClick={fetchAuditLogs} className="p-2 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                <RefreshCw className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center space-x-2">
+                                {selectedLogs.length > 0 && (
+                                    <button
+                                        onClick={handleDeleteSelectedLogs}
+                                        className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 rounded-lg transition-colors font-medium"
+                                    >
+                                        <Trash className="w-4 h-4" />
+                                        <span>Delete Selected ({selectedLogs.length})</span>
+                                    </button>
+                                )}
+                                <button
+                                    onClick={handleClearLogs}
+                                    className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-lg transition-colors font-medium"
+                                >
+                                    <Trash className="w-4 h-4" />
+                                    <span>Clear All</span>
+                                </button>
+                                <button onClick={fetchAuditLogs} className="p-2 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    <RefreshCw className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
                         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
@@ -1142,10 +1221,19 @@ export default function AdminDashboard() {
                                 <table className="w-full">
                                     <thead className="bg-gray-50 dark:bg-slate-900/50 sticky top-0">
                                         <tr>
+                                            <th className="px-6 py-3 text-left w-10">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={auditLogs.length > 0 && selectedLogs.length === auditLogs.length}
+                                                    onChange={handleSelectAllLogs}
+                                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                />
+                                            </th>
                                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time</th>
                                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
                                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
                                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Details</th>
+                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
@@ -1154,7 +1242,15 @@ export default function AdminDashboard() {
                                             log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                             log.details.toLowerCase().includes(searchTerm.toLowerCase())
                                         ).map((log) => (
-                                            <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                                            <tr key={log.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${selectedLogs.includes(log.id) ? 'bg-blue-50 dark:bg-slate-700/80' : ''}`}>
+                                                <td className="px-6 py-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedLogs.includes(log.id)}
+                                                        onChange={() => handleSelectLog(log.id)}
+                                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                    />
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                     {new Date(log.date).toLocaleString()}
                                                 </td>
@@ -1171,6 +1267,15 @@ export default function AdminDashboard() {
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                                                     {log.details}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <button
+                                                        onClick={() => handleDeleteLog(log.id)}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors"
+                                                        title="Delete Log"
+                                                    >
+                                                        <Trash className="w-4 h-4" />
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
