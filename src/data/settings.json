@@ -1,0 +1,13 @@
+{
+    "welcomeMessage": "Welcome to 7th Semester",
+    "visibleDays": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+    ],
+    "defaultScheduleView": "classic"
+}

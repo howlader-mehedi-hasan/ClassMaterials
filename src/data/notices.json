@@ -1,0 +1,129 @@
+[
+    {
+        "id": "notice-1768708144881",
+        "title": "iop",
+        "date": "2026-01-18",
+        "validUntil": "2026-02-17",
+        "category": "General",
+        "description": "tyu",
+        "content": "qwer",
+        "pdfPath": "",
+        "username": "testeditor"
+    },
+    {
+        "id": "notice-1768708107084",
+        "title": "asd",
+        "date": "2026-01-18",
+        "validUntil": "2026-02-17",
+        "category": "General",
+        "description": "fgh",
+        "content": "kl",
+        "pdfPath": "",
+        "username": "admin"
+    },
+    {
+        "id": "notice-1768703918814",
+        "title": "q",
+        "date": "2026-01-18",
+        "validUntil": "2026-02-17",
+        "category": "General",
+        "description": "w",
+        "content": "e",
+        "pdfPath": "",
+        "username": "testeditor"
+    },
+    {
+        "id": "notice-1768703894379",
+        "title": "y",
+        "date": "2026-01-18",
+        "validUntil": "2026-02-17",
+        "category": "General",
+        "description": "z",
+        "content": "w",
+        "pdfPath": "",
+        "username": "admin"
+    },
+    {
+        "id": "notice-1768702838855",
+        "title": "ore",
+        "date": "2026-01-18",
+        "validUntil": "2026-02-17",
+        "category": "General",
+        "description": "baba",
+        "content": "r na",
+        "pdfPath": "",
+        "username": "testeditor"
+    },
+    {
+        "id": "notice-1768702428953",
+        "title": "add",
+        "date": "2026-01-18",
+        "validUntil": "2026-02-17",
+        "category": "General",
+        "description": "a",
+        "content": "notice",
+        "pdfPath": "",
+        "username": "testeditor"
+    },
+    {
+        "id": "notice-1768702236174",
+        "title": "test",
+        "date": "2026-01-18",
+        "validUntil": "2026-02-17",
+        "category": "General",
+        "description": "test",
+        "content": "titi",
+        "pdfPath": "",
+        "username": "admin"
+    },
+    {
+        "id": "notice-1768701099949",
+        "title": "te",
+        "date": "2026-01-18",
+        "validUntil": "2026-02-17",
+        "category": "General",
+        "description": "st",
+        "content": "user",
+        "pdfPath": ""
+    },
+    {
+        "id": "notice-1768701066482",
+        "title": "po",
+        "date": "2026-01-18",
+        "validUntil": "2026-02-17",
+        "category": "General",
+        "description": "okok",
+        "content": "",
+        "pdfPath": ""
+    },
+    {
+        "id": "notice-1768654379994",
+        "title": "holyday next",
+        "date": "2026-01-18",
+        "validUntil": "2026-02-16",
+        "category": "Event",
+        "description": "ok",
+        "content": "good",
+        "pdfPath": "/notices/notice-1768654444606.pdf"
+    },
+    {
+        "id": "notice-1768578338372",
+        "title": "ok",
+        "date": "2026-01-16",
+        "validUntil": "2026-02-15",
+        "category": "General",
+        "description": "a",
+        "content": "c",
+        "pdfPath": "/notices/notice-1768578420381.pdf"
+    },
+    {
+        "id": "notice-1",
+        "title": "Welcome to the New Notice Board",
+        "date": "2024-01-16",
+        "validUntil": "2026-12-31",
+        "category": "General",
+        "description": "This is the first dynamic notice on the new system. Admins can now add and manage notices directly.",
+        "content": "We are excited to launch this new feature. Notices posted here will be visible to all students and faculty.",
+        "pdfPath": null
+    }
+]

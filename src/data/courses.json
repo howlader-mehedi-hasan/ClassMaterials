@@ -1,0 +1,93 @@
+[
+    {
+        "id": "CSE-4101",
+        "name": "Artifical Intelligance",
+        "instructor": "Swapnil Pranta Misteri",
+        "files": [
+            {
+                "id": "file-1768698329963-846",
+                "name": "772460.pdf",
+                "type": "pdf",
+                "path": "/materials/CSE-4101/772460.pdf"
+            },
+            {
+                "id": "file-1768702539977-429",
+                "name": "AI-Short-Course-Sample-Material.pdf",
+                "type": "pdf",
+                "path": "/materials/CSE-4101/AI-Short-Course-Sample-Material.pdf"
+            }
+        ],
+        "exams": [
+            {
+                "id": "exam-1768608142501",
+                "title": "Class Test 1",
+                "date": "2026-02-10",
+                "time": "14:10",
+                "syllabus": "chapter 4"
+            },
+            {
+                "id": "exam-1768608337100",
+                "title": "MID term Exam",
+                "date": "2026-02-15",
+                "time": "22:00",
+                "syllabus": "Slide til 10 February"
+            }
+        ]
+    },
+    {
+        "id": "CSE-4103",
+        "name": "Compailer Design",
+        "instructor": "Nusrat Jahan Urme",
+        "files": []
+    },
+    {
+        "id": "CSE-4105",
+        "name": "Information And Security Control",
+        "instructor": "Istyaque Ahammed",
+        "files": [
+            {
+                "id": "file-1768708521351-204",
+                "name": "BackPropDeriv.pdf",
+                "type": "pdf",
+                "path": "/materials/CSE-4105/BackPropDeriv.pdf"
+            }
+        ]
+    },
+    {
+        "id": "CSE-4119",
+        "name": "Machine Learning",
+        "instructor": "Prof. Dr. G M Atiqur Rahaman (CSE, KU)",
+        "files": []
+    },
+    {
+        "id": "CSE-4117",
+        "name": "Computer Vision and Image Processing",
+        "instructor": "Tahsin Ahmed Chowdhury",
+        "files": []
+    },
+    {
+        "id": "CSE-4102",
+        "name": "Artificial Intelligence Laboratory",
+        "instructor": "Swapnil Pranta Misteri",
+        "files": []
+    },
+    {
+        "id": "CSE-4116",
+        "name": "Pattern Recognition Laboratory",
+        "instructor": "ist",
+        "files": [
+            {
+                "id": "file-1768704243507-133",
+                "name": "ML UNIT-1 NOTES.pdf",
+                "type": "pdf",
+                "path": "/materials/CSE-4116/ML UNIT-1 NOTES.pdf"
+            },
+            {
+                "id": "file-1768704354556-959",
+                "name": "ANN-Lecture-1.pdf",
+                "type": "pdf",
+                "path": "/materials/CSE-4116/ANN-Lecture-1.pdf"
+            }
+        ]
+    }
+]

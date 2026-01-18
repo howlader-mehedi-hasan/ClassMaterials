@@ -1,0 +1,65 @@
+[
+    {
+        "id": "log-1768737592082-513",
+        "date": "2026-01-18T11:59:52.082Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Event"
+    },
+    {
+        "id": "log-1768737577015-533",
+        "date": "2026-01-18T11:59:37.015Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Event"
+    },
+    {
+        "id": "log-1768737328588-87",
+        "date": "2026-01-18T11:55:28.588Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Artifical Intelligance"
+    },
+    {
+        "id": "log-1768736749390-411",
+        "date": "2026-01-18T11:45:49.390Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768736723411-631",
+        "date": "2026-01-18T11:45:23.411Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768736673938-278",
+        "date": "2026-01-18T11:44:33.938Z",
+        "action": "UPDATE_USER",
+        "username": "Admin",
+        "details": "Updated user abc (1768677698180)"
+    },
+    {
+        "id": "log-1768736568728-476",
+        "date": "2026-01-18T11:42:48.728Z",
+        "action": "UPDATE_USER",
+        "username": "Admin",
+        "details": "Updated user abc (1768677698180)"
+    },
+    {
+        "id": "log-1768735660606-227",
+        "date": "2026-01-18T11:27:40.606Z",
+        "action": "UPDATE_OPINION",
+        "username": "Admin",
+        "details": "Updated opinion (op-1768734884404)"
+    },
+    {
+        "id": "log-1768735613644-955",
+        "date": "2026-01-18T11:26:53.644Z",
+        "action": "UPDATE_OPINION",
+        "username": "Admin",
+        "details": "Updated opinion (op-1768734884404)"
+    }
+]
