@@ -670,6 +670,36 @@ app.get('/api/schedule', (req, res) => {
     }
 });
 
+// PUT Toggle Schedule Cancellation
+app.put('/api/schedule/:id/cancel', (req, res) => {
+    const { id } = req.params;
+    const { isCancelled } = req.body;
+    const schedulePath = path.join(__dirname, 'src', 'data', 'schedule.json');
+
+    try {
+        if (!fs.existsSync(schedulePath)) {
+            return res.status(404).json({ error: 'Schedule data not found' });
+        }
+
+        let schedule = JSON.parse(fs.readFileSync(schedulePath, 'utf8'));
+        const index = schedule.findIndex(item => item.id === id);
+
+        if (index === -1) {
+            return res.status(404).json({ error: 'Schedule item not found' });
+        }
+
+        schedule[index].isCancelled = isCancelled;
+
+        fs.writeFileSync(schedulePath, JSON.stringify(schedule, null, 4));
+        logAudit('UPDATE_SCHEDULE', req.body.username || 'Admin', `Set cancellation to ${isCancelled} for schedule ${id}`);
+        res.json({ success: true, message: 'Schedule updated successfully', item: schedule[index] });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update schedule' });
+    }
+});
+
 // --- Users & Auth API ---
 
 // LOGIN

@@ -10,7 +10,9 @@
         "instructor": "Prof. Dr. G M Atiqur Rahaman (CSE, KU)",
         "room": "901",
         "recurrence": "weekly",
-        "color": "bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800"
+        "color": "bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800",
+        "isCancelled": false,
+        "username": "admin"
     },
     {
         "id": "sched-1768586084754",
@@ -23,20 +25,23 @@
         "instructor": "Nusrat Jahan Urme",
         "room": "901",
         "recurrence": "weekly",
-        "color": "bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800"
+        "color": "bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800",
+        "isCancelled": false,
+        "username": "admin"
     },
     {
         "id": "sched-1768590094546",
         "day": "Monday",
-        "startTime": "11:00",
-        "endTime": "12:00",
-        "type": "Lab",
+        "startTime": "15:15",
+        "endTime": "16:30",
+        "type": "Class",
         "courseId": "CSE-4105",
         "courseName": "Information And Security Control",
         "instructor": "Istyaque Ahammed",
-        "room": "302",
+        "room": "901",
         "recurrence": "weekly",
-        "color": "bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800"
+        "color": "bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800",
+        "username": "admin"
     },
     {
         "id": "sched-1768592771589",

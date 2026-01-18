@@ -17,22 +17,7 @@
                 "path": "/materials/CSE-4101/AI-Short-Course-Sample-Material.pdf"
             }
         ],
-        "exams": [
-            {
-                "id": "exam-1768608142501",
-                "title": "Class Test 1",
-                "date": "2026-02-10",
-                "time": "14:10",
-                "syllabus": "chapter 4"
-            },
-            {
-                "id": "exam-1768608337100",
-                "title": "MID term Exam",
-                "date": "2026-02-15",
-                "time": "22:00",
-                "syllabus": "Slide til 10 February"
-            }
-        ]
+        "exams": []
     },
     {
         "id": "CSE-4103",

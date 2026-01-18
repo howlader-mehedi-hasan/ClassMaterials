@@ -25,6 +25,7 @@ export default function AdminDashboard() {
     const [welcomeMessage, setWelcomeMessage] = useState("");
     const [visibleDays, setVisibleDays] = useState([]);
     const [defaultScheduleView, setDefaultScheduleView] = useState("classic");
+    const [routineSwitchTime, setRoutineSwitchTime] = useState("18:00");
     const [settingsLoading, setSettingsLoading] = useState(false);
     const [settingsMessage, setSettingsMessage] = useState(null);
 
@@ -40,6 +41,7 @@ export default function AdminDashboard() {
                 setWelcomeMessage(data.welcomeMessage || "");
                 setVisibleDays(data.visibleDays || []);
                 setDefaultScheduleView(data.defaultScheduleView || "classic");
+                setRoutineSwitchTime(data.routineSwitchTime || "18:00");
             }
         } catch (error) {
             console.error("Failed to fetch settings:", error);
@@ -60,7 +62,8 @@ export default function AdminDashboard() {
                 body: JSON.stringify({
                     welcomeMessage,
                     visibleDays,
-                    defaultScheduleView
+                    defaultScheduleView,
+                    routineSwitchTime
                 }),
             });
 
@@ -574,6 +577,18 @@ export default function AdminDashboard() {
                                             onChange={(e) => setWelcomeMessage(e.target.value)}
                                             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                         />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Routine Switch Time (24H)</label>
+                                        <input
+                                            type="time"
+                                            value={routineSwitchTime}
+                                            onChange={(e) => setRoutineSwitchTime(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                        />
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            After this time, "Today's Routine" will automatically show tomorrow's classes.
+                                        </p>
                                     </div>
                                     <button type="submit" disabled={settingsLoading} className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-bold shadow-lg flex justify-center items-center">
                                         {settingsLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}

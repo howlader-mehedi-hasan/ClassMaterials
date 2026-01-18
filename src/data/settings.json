@@ -9,5 +9,6 @@
         "Thursday",
         "Friday"
     ],
-    "defaultScheduleView": "classic"
+    "defaultScheduleView": "classic",
+    "routineSwitchTime": "00:05"
 }

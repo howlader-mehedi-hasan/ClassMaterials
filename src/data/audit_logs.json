@@ -1,5 +1,215 @@
 [
     {
+        "id": "log-1768758855395-980",
+        "date": "2026-01-18T17:54:15.395Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Set cancellation to false for schedule sched-1768585883574"
+    },
+    {
+        "id": "log-1768758853793-501",
+        "date": "2026-01-18T17:54:13.793Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Set cancellation to true for schedule sched-1768585883574"
+    },
+    {
+        "id": "log-1768758852713-172",
+        "date": "2026-01-18T17:54:12.714Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Set cancellation to false for schedule sched-1768585883574"
+    },
+    {
+        "id": "log-1768758851833-919",
+        "date": "2026-01-18T17:54:11.833Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Set cancellation to true for schedule sched-1768585883574"
+    },
+    {
+        "id": "log-1768758850882-795",
+        "date": "2026-01-18T17:54:10.882Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Set cancellation to false for schedule sched-1768585883574"
+    },
+    {
+        "id": "log-1768758850148-880",
+        "date": "2026-01-18T17:54:10.148Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Set cancellation to true for schedule sched-1768585883574"
+    },
+    {
+        "id": "log-1768758849085-741",
+        "date": "2026-01-18T17:54:09.085Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Set cancellation to false for schedule sched-1768585883574"
+    },
+    {
+        "id": "log-1768758203913-746",
+        "date": "2026-01-18T17:43:23.913Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Set cancellation to true for schedule sched-1768585883574"
+    },
+    {
+        "id": "log-1768757245912-815",
+        "date": "2026-01-18T17:27:25.912Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768757244773-812",
+        "date": "2026-01-18T17:27:24.773Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768757063159-224",
+        "date": "2026-01-18T17:24:23.159Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768757049614-15",
+        "date": "2026-01-18T17:24:09.614Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768756974414-846",
+        "date": "2026-01-18T17:22:54.414Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768756973565-553",
+        "date": "2026-01-18T17:22:53.565Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768756972318-953",
+        "date": "2026-01-18T17:22:52.318Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compailer Design"
+    },
+    {
+        "id": "log-1768756971712-247",
+        "date": "2026-01-18T17:22:51.712Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compailer Design"
+    },
+    {
+        "id": "log-1768756971103-133",
+        "date": "2026-01-18T17:22:51.103Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compailer Design"
+    },
+    {
+        "id": "log-1768756968587-490",
+        "date": "2026-01-18T17:22:48.587Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compailer Design"
+    },
+    {
+        "id": "log-1768756703020-462",
+        "date": "2026-01-18T17:18:23.020Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compailer Design"
+    },
+    {
+        "id": "log-1768756702444-16",
+        "date": "2026-01-18T17:18:22.444Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compailer Design"
+    },
+    {
+        "id": "log-1768756701397-693",
+        "date": "2026-01-18T17:18:21.397Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768756700756-277",
+        "date": "2026-01-18T17:18:20.756Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768756699842-272",
+        "date": "2026-01-18T17:18:19.842Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768756664113-51",
+        "date": "2026-01-18T17:17:44.114Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768756658282-682",
+        "date": "2026-01-18T17:17:38.282Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compailer Design"
+    },
+    {
+        "id": "log-1768756657686-343",
+        "date": "2026-01-18T17:17:37.686Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Compailer Design"
+    },
+    {
+        "id": "log-1768756656075-867",
+        "date": "2026-01-18T17:17:36.075Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768756652398-764",
+        "date": "2026-01-18T17:17:32.398Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Machine Learning"
+    },
+    {
+        "id": "log-1768745510668-387",
+        "date": "2026-01-18T14:11:50.668Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Information And Security Control"
+    },
+    {
+        "id": "log-1768745498232-831",
+        "date": "2026-01-18T14:11:38.232Z",
+        "action": "UPDATE_SCHEDULE",
+        "username": "admin",
+        "details": "Schedule event: Information And Security Control"
+    },
+    {
         "id": "log-1768737592082-513",
         "date": "2026-01-18T11:59:52.082Z",
         "action": "UPDATE_SCHEDULE",
