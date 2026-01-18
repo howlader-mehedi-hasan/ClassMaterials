@@ -102,7 +102,7 @@ export default function Syllabus() {
 
     const fetchSyllabus = async () => {
         try {
-            const response = await fetch("http://localhost:3001/api/syllabus");
+            const response = await fetch("/api/syllabus");
             const data = await response.json();
             setSyllabusData(data);
         } catch (error) {
@@ -114,7 +114,7 @@ export default function Syllabus() {
         if (!isAdmin) {
             if (!window.confirm("Send deletion request for this course?")) return;
             try {
-                const response = await fetch("http://localhost:3001/api/deletion-requests", {
+                const response = await fetch("/api/deletion-requests", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -135,7 +135,7 @@ export default function Syllabus() {
         if (!window.confirm("Are you sure you want to delete this course from the syllabus?")) return;
 
         try {
-            const response = await fetch(`http://localhost:3001/api/syllabus/${code}`, {
+            const response = await fetch(`/api/syllabus/${code}`, {
                 method: "DELETE",
             });
             if (response.ok) {
@@ -170,7 +170,7 @@ export default function Syllabus() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch("http://localhost:3001/api/syllabus", {
+            const response = await fetch("/api/syllabus", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -273,7 +273,7 @@ export default function Syllabus() {
                                             formData.append('username', user.username); // Audit
 
                                             try {
-                                                const res = await fetch('http://localhost:3001/api/syllabus/pdf?type=4-1', {
+                                                const res = await fetch('/api/syllabus/pdf?type=4-1', {
                                                     method: 'POST',
                                                     body: formData
                                                 });
@@ -334,7 +334,7 @@ export default function Syllabus() {
                                             formData.append('username', user.username); // Audit
 
                                             try {
-                                                const res = await fetch('http://localhost:3001/api/syllabus/pdf?type=full', {
+                                                const res = await fetch('/api/syllabus/pdf?type=full', {
                                                     method: 'POST',
                                                     body: formData
                                                 });

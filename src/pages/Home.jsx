@@ -16,7 +16,7 @@ export default function Home() {
 
     // Fetch Settings on Mount
     useEffect(() => {
-        fetch("http://localhost:3001/api/settings")
+        fetch("/api/settings")
             .then(res => res.json())
             .then(data => {
                 setSettings(data);
@@ -30,7 +30,7 @@ export default function Home() {
     const handleSaveMessage = async () => {
         const newSettings = { ...settings, welcomeMessage: tempMessage };
         try {
-            const res = await fetch("http://localhost:3001/api/settings", {
+            const res = await fetch("/api/settings", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newSettings)

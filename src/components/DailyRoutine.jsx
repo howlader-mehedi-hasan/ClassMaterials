@@ -17,7 +17,7 @@ export default function DailyRoutine() {
             setLoading(true);
             try {
                 // Fetch Settings
-                const settingsRes = await fetch('http://localhost:3001/api/settings');
+                const settingsRes = await fetch('/api/settings');
                 const settings = await settingsRes.json();
                 const switchTime = settings.routineSwitchTime || "18:00"; // Default 6 PM
 
@@ -35,7 +35,7 @@ export default function DailyRoutine() {
                 setSelectedDate(initialDate);
 
                 // Fetch Schedule
-                const scheduleRes = await fetch('http://localhost:3001/api/schedule');
+                const scheduleRes = await fetch('/api/schedule');
                 const schedule = await scheduleRes.json();
                 setScheduleData(schedule);
 
@@ -50,7 +50,7 @@ export default function DailyRoutine() {
     }, []);
 
     const fetchSchedule = () => { // Keep for updates
-        fetch('http://localhost:3001/api/schedule')
+        fetch('/api/schedule')
             .then(res => res.json())
             .then(data => setScheduleData(data))
             .catch(console.error);
@@ -76,7 +76,7 @@ export default function DailyRoutine() {
         const newStatus = !item.isCancelled;
 
         try {
-            const res = await fetch(`http://localhost:3001/api/schedule/${item.id}/cancel`, {
+            const res = await fetch(`/api/schedule/${item.id}/cancel`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ isCancelled: newStatus, username: user?.username })

@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { FileText, ArrowLeft, Download, Eye, HelpCircle, Upload, Check, Loader2, Plus, Trash2, Clock, Calendar, Pencil, BookOpen } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import PDFViewer from "../components/PDFViewer";
+
 import courses from "../data/courses.json";
 
 export default function CourseView() {
     const { courseId } = useParams();
     const { user, isAdmin, hasPermission } = useAuth();
-    const [selectedFile, setSelectedFile] = useState(null);
+
 
     // Upload State
     const [uploadFiles, setUploadFiles] = useState([]);
@@ -19,7 +19,7 @@ export default function CourseView() {
 
     useEffect(() => {
         if (course) {
-            fetch('http://localhost:3001/api/syllabus')
+            fetch('/api/syllabus')
                 .then(res => res.json())
                 .then(data => {
                     const syl = data.find(s => s.code === course.id);
@@ -58,7 +58,7 @@ export default function CourseView() {
                 formData.append("files", file);
             });
 
-            const response = await fetch("http://localhost:3001/api/courses", {
+            const response = await fetch("/api/courses", {
                 method: "POST",
                 body: formData,
             });
@@ -83,7 +83,7 @@ export default function CourseView() {
         if (!isAdmin) {
             if (!window.confirm("Send deletion request for this file?")) return;
             try {
-                const response = await fetch("http://localhost:3001/api/deletion-requests", {
+                const response = await fetch("/api/deletion-requests", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -106,7 +106,7 @@ export default function CourseView() {
         }
 
         try {
-            const response = await fetch(`http://localhost:3001/api/courses/${courseId}/files/${fileId}`, {
+            const response = await fetch(`/api/courses/${courseId}/files/${fileId}`, {
                 method: "DELETE",
             });
 
@@ -151,8 +151,8 @@ export default function CourseView() {
         e.preventDefault();
         try {
             const url = isEditing
-                ? `http://localhost:3001/api/courses/${courseId}/exams/${editingExamId}`
-                : `http://localhost:3001/api/courses/${courseId}/exams`;
+                ? `/api/courses/${courseId}/exams/${editingExamId}`
+                : `/api/courses/${courseId}/exams`;
 
             const method = isEditing ? 'PUT' : 'POST';
 
@@ -177,7 +177,7 @@ export default function CourseView() {
         if (!isAdmin) {
             if (!window.confirm("Send deletion request for this exam?")) return;
             try {
-                const response = await fetch("http://localhost:3001/api/deletion-requests", {
+                const response = await fetch("/api/deletion-requests", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -197,7 +197,7 @@ export default function CourseView() {
 
         if (!window.confirm('Are you sure?')) return;
         try {
-            const response = await fetch(`http://localhost:3001/api/courses/${courseId}/exams/${examId}`, {
+            const response = await fetch(`/api/courses/${courseId}/exams/${examId}`, {
                 method: 'DELETE'
             });
             if (response.ok) {
@@ -433,7 +433,7 @@ export default function CourseView() {
                                     multiple
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     onChange={(e) => setUploadFiles(e.target.files)}
-                                    accept="application/pdf"
+                                    accept="application/pdf,image/*"
                                 />
                                 {uploadFiles.length > 0 ? (
                                     <div className="flex items-center text-green-600 dark:text-green-400">
@@ -443,7 +443,7 @@ export default function CourseView() {
                                 ) : (
                                     <div className="flex items-center text-blue-500 dark:text-blue-400 group-hover:text-blue-600 dark:group-hover:text-blue-300">
                                         <Upload className="w-5 h-5 mr-2" />
-                                        <span className="font-medium">Choose PDF files</span>
+                                        <span className="font-medium">Choose files</span>
                                     </div>
                                 )}
                             </div>
@@ -503,13 +503,15 @@ export default function CourseView() {
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-3">
-                                        <button
-                                            onClick={() => setSelectedFile(file)}
+                                        <a
+                                            href={file.path}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
                                             className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 hover:border-gray-300 transition-all shadow-sm text-sm font-medium"
                                         >
                                             <Eye className="w-4 h-4" />
-                                            <span className="hidden sm:inline">Preview</span>
-                                        </button>
+                                            <span className="hidden sm:inline">Open</span>
+                                        </a>
                                         <a
                                             href={file.path}
                                             download
@@ -535,15 +537,7 @@ export default function CourseView() {
                 )}
             </div>
 
-            {selectedFile && (
-                <PDFViewer
-                    file={{
-                        name: selectedFile.name,
-                        url: selectedFile.path
-                    }}
-                    onClose={() => setSelectedFile(null)}
-                />
-            )}
+
         </div>
     );
 }

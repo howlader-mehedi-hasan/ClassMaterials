@@ -35,7 +35,7 @@ export default function AdminDashboard() {
 
     const fetchSettings = async () => {
         try {
-            const response = await fetch("http://localhost:3001/api/settings");
+            const response = await fetch("/api/settings");
             if (response.ok) {
                 const data = await response.json();
                 setWelcomeMessage(data.welcomeMessage || "");
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
         setSettingsMessage(null);
 
         try {
-            const response = await fetch("http://localhost:3001/api/settings", {
+            const response = await fetch("/api/settings", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
     const handleDeleteLog = async (id) => {
         if (!window.confirm("Delete this log entry?")) return;
         try {
-            const res = await fetch(`http://localhost:3001/api/admin/logs/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/admin/logs/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 fetchAuditLogs();
                 setSelectedLogs(prev => prev.filter(lId => lId !== id));
@@ -146,7 +146,7 @@ export default function AdminDashboard() {
     const handleDeleteSelectedLogs = async () => {
         if (!window.confirm(`Delete ${selectedLogs.length} selected logs?`)) return;
         try {
-            const res = await fetch('http://localhost:3001/api/admin/logs/batch-delete', {
+            const res = await fetch('/api/admin/logs/batch-delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids: selectedLogs })
@@ -166,7 +166,7 @@ export default function AdminDashboard() {
         if (password !== "admin123") return alert("Incorrect password"); // Simple check for MVP
 
         try {
-            const res = await fetch('http://localhost:3001/api/admin/logs', { method: 'DELETE' });
+            const res = await fetch('/api/admin/logs', { method: 'DELETE' });
             if (res.ok) {
                 fetchAuditLogs();
                 setSelectedLogs([]);
@@ -210,7 +210,7 @@ export default function AdminDashboard() {
 
     const fetchDeletionRequests = async () => {
         try {
-            const res = await fetch("http://localhost:3001/api/admin/deletion-requests");
+            const res = await fetch("/api/admin/deletion-requests");
             if (res.ok) setDeletionRequests(await res.json());
         } catch (error) {
             console.error("Failed to fetch requests", error);
@@ -219,7 +219,7 @@ export default function AdminDashboard() {
 
     const fetchAuditLogs = async () => {
         try {
-            const res = await fetch("http://localhost:3001/api/admin/logs");
+            const res = await fetch("/api/admin/logs");
             if (res.ok) setAuditLogs(await res.json());
         } catch (error) {
             console.error("Failed to fetch logs", error);
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
 
     const fetchMessages = async () => {
         try {
-            const res = await fetch("http://localhost:3001/api/admin/messages");
+            const res = await fetch("/api/admin/messages");
             if (res.ok) setMessages(await res.json());
         } catch (error) {
             console.error("Failed to fetch messages", error);
@@ -237,7 +237,7 @@ export default function AdminDashboard() {
 
     const fetchComplaints = async () => {
         try {
-            const res = await fetch("http://localhost:3001/api/admin/complaints");
+            const res = await fetch("/api/admin/complaints");
             if (res.ok) setComplaints(await res.json());
         } catch (error) {
             console.error("Failed to fetch complaints", error);
@@ -246,7 +246,7 @@ export default function AdminDashboard() {
 
     const fetchOpinions = async () => {
         try {
-            const res = await fetch("http://localhost:3001/api/opinions");
+            const res = await fetch("/api/opinions");
             if (res.ok) setOpinions(await res.json());
         } catch (error) {
             console.error("Failed to fetch opinions", error);
@@ -256,7 +256,7 @@ export default function AdminDashboard() {
     const handleDeleteMessage = async (id) => {
         if (!window.confirm("Delete this message permanently?")) return;
         try {
-            const res = await fetch(`http://localhost:3001/api/admin/messages/${id}`, { method: "DELETE" });
+            const res = await fetch(`/api/admin/messages/${id}`, { method: "DELETE" });
             if (res.ok) {
                 fetchMessages();
             } else {
@@ -270,7 +270,7 @@ export default function AdminDashboard() {
     const handleDeleteComplaint = async (id) => {
         if (!window.confirm("Delete this complaint permanently?")) return;
         try {
-            const res = await fetch(`http://localhost:3001/api/admin/complaints/${id}`, { method: "DELETE" });
+            const res = await fetch(`/api/admin/complaints/${id}`, { method: "DELETE" });
             if (res.ok) {
                 fetchComplaints();
             } else {
@@ -284,7 +284,7 @@ export default function AdminDashboard() {
     const handleDeleteOpinion = async (id) => {
         if (!window.confirm("Delete this feedback?")) return;
         try {
-            const res = await fetch(`http://localhost:3001/api/admin/opinions/${id}`, { method: "DELETE" });
+            const res = await fetch(`/api/admin/opinions/${id}`, { method: "DELETE" });
             if (res.ok) {
                 fetchOpinions();
             } else {
@@ -304,7 +304,7 @@ export default function AdminDashboard() {
     const saveOpinion = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`http://localhost:3001/api/admin/opinions/${editingOpinion.id}`, {
+            const res = await fetch(`/api/admin/opinions/${editingOpinion.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(editForm)
@@ -324,7 +324,7 @@ export default function AdminDashboard() {
     const handleApproveRequest = async (id) => {
         if (!window.confirm("Approve this deletion? This item will be permanently deleted.")) return;
         try {
-            const res = await fetch(`http://localhost:3001/api/admin/deletion-requests/${id}/approve`, { method: "POST" });
+            const res = await fetch(`/api/admin/deletion-requests/${id}/approve`, { method: "POST" });
             const data = await res.json();
             if (res.ok) {
                 alert(data.message);
@@ -340,7 +340,7 @@ export default function AdminDashboard() {
     const handleRejectRequest = async (id) => {
         if (!window.confirm("Reject this request?")) return;
         try {
-            const res = await fetch(`http://localhost:3001/api/admin/deletion-requests/${id}`, { method: "DELETE" });
+            const res = await fetch(`/api/admin/deletion-requests/${id}`, { method: "DELETE" });
             if (res.ok) {
                 fetchDeletionRequests();
             }
@@ -353,7 +353,7 @@ export default function AdminDashboard() {
 
     const fetchUsers = async () => {
         try {
-            const response = await fetch("http://localhost:3001/api/users");
+            const response = await fetch("/api/users");
             if (response.ok) {
                 setUsers(await response.json());
             }
@@ -374,7 +374,7 @@ export default function AdminDashboard() {
     const handleCreateUser = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch("http://localhost:3001/api/users", {
+            const response = await fetch("/api/users", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -416,7 +416,7 @@ export default function AdminDashboard() {
     const handleSaveUser = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`http://localhost:3001/api/users/${editingUser.id}`, {
+            const res = await fetch(`/api/users/${editingUser.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(editUserForm)
@@ -440,7 +440,7 @@ export default function AdminDashboard() {
     const handleDeleteUser = async (id) => {
         if (!window.confirm("Delete this user?")) return;
         try {
-            const response = await fetch(`http://localhost:3001/api/users/${id}`, { method: "DELETE" });
+            const response = await fetch(`/api/users/${id}`, { method: "DELETE" });
             if (response.ok) {
                 fetchUsers();
             } else {
@@ -455,7 +455,7 @@ export default function AdminDashboard() {
         e.preventDefault();
         // Ideally verify current password first, but for MVP just update
         try {
-            const response = await fetch(`http://localhost:3001/api/users/${user.id}/password`, {
+            const response = await fetch(`/api/users/${user.id}/password`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ newPassword: newProfilePassword }),
@@ -493,7 +493,7 @@ export default function AdminDashboard() {
     const handlePermissionsSave = async () => {
         if (!permissionsModalUser) return;
         try {
-            const res = await fetch(`http://localhost:3001/api/users/${permissionsModalUser.id}/permissions`, {
+            const res = await fetch(`/api/users/${permissionsModalUser.id}/permissions`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ permissions: permissionsToEdit })
@@ -527,7 +527,7 @@ export default function AdminDashboard() {
 
         setCleaning(true);
         try {
-            const res = await fetch('http://localhost:3001/api/cleanup', { method: 'POST' });
+            const res = await fetch('/api/cleanup', { method: 'POST' });
             const data = await res.json();
             if (res.ok) {
                 alert(data.message);

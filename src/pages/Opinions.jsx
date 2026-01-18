@@ -15,7 +15,7 @@ export default function Opinions() {
 
     const fetchOpinions = async () => {
         try {
-            const res = await fetch('http://localhost:3001/api/opinions');
+            const res = await fetch('/api/opinions');
             if (res.ok) {
                 const data = await res.json();
                 setFeed(data);
@@ -33,7 +33,7 @@ export default function Opinions() {
         }
 
         try {
-            const response = await fetch('http://localhost:3001/api/opinions', {
+            const response = await fetch('/api/opinions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ rating, feedback })
@@ -87,8 +87,8 @@ export default function Opinions() {
                                         >
                                             <Star
                                                 className={`w-8 h-8 transition-colors ${star <= (hoverRating || rating)
-                                                        ? "fill-yellow-400 text-yellow-400"
-                                                        : "text-gray-300 dark:text-slate-600"
+                                                    ? "fill-yellow-400 text-yellow-400"
+                                                    : "text-gray-300 dark:text-slate-600"
                                                     }`}
                                             />
                                         </button>
@@ -144,8 +144,8 @@ export default function Opinions() {
                                                 <Star
                                                     key={i}
                                                     className={`w-4 h-4 ${i < item.rating
-                                                            ? "fill-yellow-400 text-yellow-400"
-                                                            : "text-gray-200 dark:text-slate-700"
+                                                        ? "fill-yellow-400 text-yellow-400"
+                                                        : "text-gray-200 dark:text-slate-700"
                                                         }`}
                                                 />
                                             ))}

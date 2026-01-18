@@ -1,5 +1,19 @@
 [
     {
+        "id": "log-1768770854607-69",
+        "date": "2026-01-18T21:14:14.607Z",
+        "action": "UPDATE_COURSE",
+        "username": "hmh",
+        "details": "Updated course CSE-4101"
+    },
+    {
+        "id": "log-1768770854605-472",
+        "date": "2026-01-18T21:14:14.605Z",
+        "action": "UPLOAD_FILE",
+        "username": "hmh",
+        "details": "Uploaded 7QTdhc1OoYItyQFFf6qNmFG6ro6.jpg to CSE-4101"
+    },
+    {
         "id": "log-1768768533961-575",
         "date": "2026-01-18T20:35:33.961Z",
         "action": "UPDATE_USER",

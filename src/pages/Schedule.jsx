@@ -51,7 +51,7 @@ export default function Schedule() {
     const [visibleDays, setVisibleDays] = useState(["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]);
     const [isPrecisionMode, setIsPrecisionMode] = useState(true);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [routineUrl, setRoutineUrl] = useState("http://localhost:3001/routine.png");
+    const [routineUrl, setRoutineUrl] = useState("/routine.png");
     const [uploadingRoutine, setUploadingRoutine] = useState(false);
 
     // Form State
@@ -77,7 +77,7 @@ export default function Schedule() {
 
     const fetchSchedule = async () => {
         try {
-            const res = await fetch("http://localhost:3001/api/schedule");
+            const res = await fetch("/api/schedule");
             setSchedule(await res.json());
         } catch (error) {
             console.error("Failed to fetch schedule:", error);
@@ -86,7 +86,7 @@ export default function Schedule() {
 
     const fetchCourses = async () => {
         try {
-            const res = await fetch("http://localhost:3001/api/courses");
+            const res = await fetch("/api/courses");
             setCourses(await res.json());
         } catch (error) {
             console.error("Failed to fetch courses:", error);
@@ -95,7 +95,7 @@ export default function Schedule() {
 
     const fetchSettings = async () => {
         try {
-            const res = await fetch("http://localhost:3001/api/settings");
+            const res = await fetch("/api/settings");
             const data = await res.json();
             if (data.visibleDays) setVisibleDays(data.visibleDays);
             if (data.defaultScheduleView) {
@@ -108,7 +108,7 @@ export default function Schedule() {
 
     const saveSettings = async (newVisibleDays) => {
         try {
-            await fetch("http://localhost:3001/api/settings", {
+            await fetch("/api/settings", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ visibleDays: newVisibleDays })
@@ -167,7 +167,7 @@ export default function Schedule() {
         if (!isAdmin) {
             if (!window.confirm("Send deletion request for this event?")) return;
             try {
-                const response = await fetch("http://localhost:3001/api/deletion-requests", {
+                const response = await fetch("/api/deletion-requests", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -187,7 +187,7 @@ export default function Schedule() {
 
         if (!window.confirm("Delete this schedule entry?")) return;
         try {
-            await fetch(`http://localhost:3001/api/schedule/${id}`, { method: "DELETE" });
+            await fetch(`/api/schedule/${id}`, { method: "DELETE" });
             fetchSchedule();
         } catch (error) {
             console.error("Error deleting event:", error);
@@ -197,7 +197,7 @@ export default function Schedule() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch("http://localhost:3001/api/schedule", {
+            const res = await fetch("/api/schedule", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ...formData, username: user.username })
@@ -236,14 +236,14 @@ export default function Schedule() {
 
         setUploadingRoutine(true);
         try {
-            const res = await fetch("http://localhost:3001/api/schedule/routine", {
+            const res = await fetch("/api/schedule/routine", {
                 method: "POST",
                 body: formData
             });
             const data = await res.json();
             if (res.ok) {
                 // Update URL with timestamp to force refresh
-                setRoutineUrl(`http://localhost:3001/routine.png?t=${data.timestamp}`);
+                setRoutineUrl(`/routine.png?t=${data.timestamp}`);
                 alert("Routine updated successfully!");
             } else {
                 alert("Failed to upload");

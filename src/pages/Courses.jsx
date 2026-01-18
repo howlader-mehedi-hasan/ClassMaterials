@@ -24,7 +24,7 @@ export default function Courses() {
     // Refresh courses function
     const fetchCourses = async () => {
         try {
-            const res = await fetch("http://localhost:3001/api/courses");
+            const res = await fetch("/api/courses");
             if (res.ok) setLocalCourses(await res.json());
         } catch (err) {
             console.error("Failed to refresh courses", err);
@@ -38,7 +38,7 @@ export default function Courses() {
     useEffect(() => {
         const fetchSyllabus = async () => {
             try {
-                const res = await fetch('http://localhost:3001/api/syllabus');
+                const res = await fetch('/api/syllabus');
                 if (res.ok) setSyllabusData(await res.json());
             } catch (err) {
                 console.error("Failed to fetch syllabus", err);
@@ -69,7 +69,7 @@ export default function Courses() {
                 });
             }
 
-            const response = await fetch("http://localhost:3001/api/courses", {
+            const response = await fetch("/api/courses", {
                 method: "POST",
                 body: formData,
             });
@@ -106,7 +106,7 @@ export default function Courses() {
         if (!isAdmin) {
             if (!window.confirm("You do not have permission to delete this directly. Send a deletion request to Admin?")) return;
             try {
-                const response = await fetch("http://localhost:3001/api/deletion-requests", {
+                const response = await fetch("/api/deletion-requests", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -129,7 +129,7 @@ export default function Courses() {
         }
 
         try {
-            const response = await fetch(`http://localhost:3001/api/courses/${id}`, {
+            const response = await fetch(`/api/courses/${id}`, {
                 method: "DELETE",
             });
 
@@ -168,7 +168,7 @@ export default function Courses() {
     const handleSaveOrder = async () => {
         setLoading(true);
         try {
-            const res = await fetch("http://localhost:3001/api/courses/reorder", {
+            const res = await fetch("/api/courses/reorder", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ courses: localCourses }),
@@ -431,7 +431,7 @@ export default function Courses() {
                                                     multiple
                                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                     onChange={(e) => setFiles(e.target.files)}
-                                                    accept="application/pdf"
+                                                    accept="application/pdf,image/*"
                                                 />
                                                 <div className="flex flex-col items-center">
                                                     {files.length > 0 ? (
@@ -450,7 +450,7 @@ export default function Courses() {
                                                     ) : (
                                                         <>
                                                             <Upload className="w-10 h-10 text-gray-400 dark:text-gray-500 mb-2 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" />
-                                                            <p className="text-gray-600 dark:text-gray-300 font-medium">Click to upload PDFs</p>
+                                                            <p className="text-gray-600 dark:text-gray-300 font-medium">Click to upload files</p>
                                                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">or drag and drop multiple files</p>
                                                         </>
                                                     )}

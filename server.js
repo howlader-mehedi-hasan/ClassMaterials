@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -172,10 +172,13 @@ app.post('/api/courses', upload.array('files'), (req, res) => {
 
         if (req.files && req.files.length > 0) {
             req.files.forEach(file => {
+                const ext = path.extname(file.originalname).toLowerCase();
+                const fileType = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp'].includes(ext) ? 'image' : 'pdf';
+                
                 const newFile = {
                     id: `file-${Date.now()}-${Math.round(Math.random() * 1000)}`,
                     name: file.originalname,
-                    type: 'pdf',
+                    type: fileType,
                     path: `/materials/${courseId}/${file.originalname}`,
                     uploadedBy: username, // Metadata
                     uploadDate: new Date().toISOString() // Metadata
@@ -605,8 +608,8 @@ const noticeStorage = multer.diskStorage({
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        // Unique filename: notice-{timestamp}.pdf
-        cb(null, `notice-${Date.now()}.pdf`);
+        // Unique filename: notice-{timestamp}{ext}
+        cb(null, `notice-${Date.now()}${path.extname(file.originalname)}`);
     }
 });
 const noticeUpload = multer({ storage: noticeStorage });

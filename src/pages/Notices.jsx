@@ -109,7 +109,7 @@ export default function Notices() {
 
     const fetchNotices = async () => {
         try {
-            const res = await fetch('http://localhost:3001/api/notices');
+            const res = await fetch('/api/notices');
             const data = await res.json();
             // Sort by date descending
             setNotices(data.sort((a, b) => new Date(b.date) - new Date(a.date)));
@@ -122,7 +122,7 @@ export default function Notices() {
         if (!isAdmin) {
             if (!window.confirm("Send deletion request for this notice?")) return;
             try {
-                const response = await fetch("http://localhost:3001/api/deletion-requests", {
+                const response = await fetch("/api/deletion-requests", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -142,7 +142,7 @@ export default function Notices() {
 
         if (!window.confirm("Are you sure you want to delete this notice?")) return;
         try {
-            await fetch(`http://localhost:3001/api/notices/${id}`, { method: 'DELETE' });
+            await fetch(`/api/notices/${id}`, { method: 'DELETE' });
             fetchNotices();
         } catch (error) {
             console.error("Error deleting notice:", error);
@@ -187,7 +187,7 @@ export default function Notices() {
             const uploadData = new FormData();
             uploadData.append('file', file);
             try {
-                const res = await fetch('http://localhost:3001/api/notices/pdf', {
+                const res = await fetch('/api/notices/pdf', {
                     method: 'POST',
                     body: uploadData
                 });
@@ -214,7 +214,7 @@ export default function Notices() {
         const noticeToSave = { ...formData, pdfPath: finalPdfPath, username: user.username };
 
         try {
-            const res = await fetch('http://localhost:3001/api/notices', {
+            const res = await fetch('/api/notices', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(noticeToSave)
@@ -363,19 +363,19 @@ export default function Notices() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Attachment (PDF)</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Attachment (PDF/Image)</label>
                                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors">
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                             <Download className="w-8 h-8 mb-3 text-gray-400" />
                                             <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
                                                 <span className="font-semibold">{file ? file.name : "Click to upload"}</span>
                                             </p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">PDF only (MAX. 5MB)</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">PDF or Image (MAX. 5MB)</p>
                                         </div>
                                         <input
                                             type="file"
                                             className="hidden"
-                                            accept="application/pdf"
+                                            accept="application/pdf,image/*"
                                             onChange={(e) => e.target.files && setFile(e.target.files[0])}
                                         />
                                     </label>
