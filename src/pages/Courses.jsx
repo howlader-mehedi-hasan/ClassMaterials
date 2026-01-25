@@ -3,31 +3,49 @@ import { Link } from "react-router-dom";
 import { Reorder } from "framer-motion";
 import { Folder, Search, BookOpen, Plus, Edit, Trash2, X, Save, Upload, Check, FileText, Loader2, GripVertical, List } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import coursesData from "../data/courses.json"; // Import JSON directly
 
 export default function Courses() {
     const { user, isAdmin, hasPermission } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
     const [syllabusData, setSyllabusData] = useState([]);
-    const [localCourses, setLocalCourses] = useState(coursesData);
+    const [courses, setCourses] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [isReordering, setIsReordering] = useState(false);
+    const [viewMode, setViewMode] = useState("grid"); // grid, list
 
-    // Modal & Form State
+    // Modal & Form State (Original)
+    // Modal & Form State (Original)
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
+    // Loading state is shared or we can add a specific one if needed, but for now using the main loading state
     const [message, setMessage] = useState(null);
     const [courseId, setCourseId] = useState("");
     const [courseName, setCourseName] = useState("");
     const [instructor, setInstructor] = useState("");
     const [files, setFiles] = useState([]);
 
-    // Refresh courses function
+    // Add Course State (New from diff)
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [newCourseName, setNewCourseName] = useState("");
+    const [newCourseId, setNewCourseId] = useState("");
+    const [newInstructor, setNewInstructor] = useState("");
+    const [addError, setAddError] = useState("");
+
+    // Edit Course State (New from diff)
+    const [editingCourse, setEditingCourse] = useState(null);
+    const [editForm, setEditForm] = useState({ name: "", instructor: "" });
+
+
+    // Refresh courses function (Modified to be the primary fetch)
     const fetchCourses = async () => {
         try {
-            const res = await fetch("/api/courses");
-            if (res.ok) setLocalCourses(await res.json());
-        } catch (err) {
-            console.error("Failed to refresh courses", err);
+            const response = await fetch("/api/courses");
+            if (response.ok) {
+                setCourses(await response.json());
+            }
+        } catch (error) {
+            console.error("Failed to fetch courses:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -47,14 +65,44 @@ export default function Courses() {
         fetchSyllabus();
     }, []);
 
-    const filteredCourses = localCourses.filter(course =>
+    const filteredCourses = courses.filter(course =>
         course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (course.instructor && course.instructor.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    const handleAddCourse = async (e) => {
+        e.preventDefault();
+        setAddError("");
+        try {
+            const res = await fetch("/api/courses", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    courseId: newCourseId,
+                    courseName: newCourseName,
+                    instructor: newInstructor,
+                    username: user.username
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setCourses([...courses, data.course]);
+                setIsAddModalOpen(false);
+                setNewCourseName("");
+                setNewCourseId("");
+                setNewInstructor("");
+            } else {
+                setAddError(data.error || "Failed to add course");
+            }
+        } catch (error) {
+            setAddError("Failed to add course");
+        }
+    };
+
     const handleCreateCourse = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setLoading(true); // This loading state is now for the initial fetch, not form submission
         setMessage(null);
 
         try {
@@ -112,7 +160,7 @@ export default function Courses() {
                     body: JSON.stringify({
                         type: "course",
                         resourceId: id,
-                        details: { name: localCourses.find(c => c.id === id)?.name || id },
+                        details: { name: courses.find(c => c.id === id)?.name || id },
                         requestedBy: user.username
                     })
                 });
@@ -171,7 +219,7 @@ export default function Courses() {
             const res = await fetch("/api/courses/reorder", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ courses: localCourses }),
+                body: JSON.stringify({ courses: courses }),
             });
             if (res.ok) {
                 setIsReordering(false);
@@ -257,8 +305,8 @@ export default function Courses() {
                     <p className="text-gray-500 dark:text-gray-400 mt-2">Try adjusting your search terms.</p>
                 </div>
             ) : isReordering ? (
-                <Reorder.Group axis="y" values={localCourses} onReorder={setLocalCourses} className="space-y-4 max-w-3xl mx-auto">
-                    {localCourses.map((course) => (
+                <Reorder.Group axis="y" values={courses} onReorder={setCourses} className="space-y-4 max-w-3xl mx-auto">
+                    {courses.map((course) => (
                         <Reorder.Item key={course.id} value={course}>
                             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex items-center space-x-4 cursor-grab active:cursor-grabbing">
                                 <GripVertical className="text-gray-400" />
@@ -354,7 +402,7 @@ export default function Courses() {
                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
                             <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
                                 <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-                                    {courseId && localCourses.some(c => c.id === courseId) ? "Edit Course" : "Add New Course"}
+                                    {courseId && courses.some(c => c.id === courseId) ? "Edit Course" : "Add New Course"}
                                 </h2>
                                 <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                     <X className="w-6 h-6" />

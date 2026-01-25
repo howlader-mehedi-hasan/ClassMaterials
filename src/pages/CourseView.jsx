@@ -1,21 +1,66 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { FileText, ArrowLeft, Download, Eye, HelpCircle, Upload, Check, Loader2, Plus, Trash2, Clock, Calendar, Pencil, BookOpen } from "lucide-react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { FileText, ArrowLeft, Download, Eye, HelpCircle, Upload, Check, Loader2, Plus, Trash2, Clock, Calendar, Pencil, Save, X, BookOpen } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
-import courses from "../data/courses.json";
 
 export default function CourseView() {
     const { courseId } = useParams();
+    const navigate = useNavigate();
     const { user, isAdmin, hasPermission } = useAuth();
 
+    const [course, setCourse] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     // Upload State
     const [uploadFiles, setUploadFiles] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [syllabus, setSyllabus] = useState(null);
 
-    const course = courses.find(c => c.id === courseId);
+    // Edit Exam State
+    const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+    const [editingExam, setEditingExam] = useState(null);
+    const [examForm, setExamForm] = useState({ title: "", date: "", time: "", syllabus: "" });
+    const [examLoading, setExamLoading] = useState(false);
+
+    // Add Exam State (Moved from below)
+    const [isAddingExam, setIsAddingExam] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingExamId, setEditingExamId] = useState(null);
+    const [newExam, setNewExam] = useState({ title: '', date: '', time: '', syllabus: '' });
+
+    // Fetch Course Data
+    const fetchCourse = async () => {
+        console.log("Fetching course with ID:", courseId);
+        try {
+            setLoading(true);
+            const response = await fetch("/api/courses");
+            console.log("Fetch response status:", response.status);
+            if (response.ok) {
+                const courses = await response.json();
+                console.log("Courses fetched:", courses);
+                const foundCourse = courses.find(c => c.id === courseId);
+                console.log("Found course:", foundCourse);
+                if (foundCourse) {
+                    setCourse(foundCourse);
+                } else {
+                    setError("Course not found");
+                }
+            } else {
+                setError("Failed to fetch courses");
+            }
+        } catch (err) {
+            console.error("Fetch error:", err);
+            setError("Network error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCourse();
+    }, [courseId]);
 
     useEffect(() => {
         if (course) {
@@ -29,6 +74,29 @@ export default function CourseView() {
         }
     }, [course]);
 
+    if (loading) {
+        return (
+            <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+                <Loader2 className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-spin" />
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Loading Course...</h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-2">Please wait while we fetch the course details.</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+                <HelpCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Error</h2>
+                <p className="text-red-500 dark:text-red-400 mt-2 mb-8">{error}</p>
+                <Link to="/" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+                    &larr; Return to Home
+                </Link>
+            </div>
+        );
+    }
+
     if (!course) {
         return (
             <div className="max-w-4xl mx-auto px-4 py-20 text-center">
@@ -41,6 +109,15 @@ export default function CourseView() {
             </div>
         );
     }
+
+    const getDownloadUrl = (url) => {
+        if (!url) return '';
+        if (url.includes('cloudinary.com')) {
+            if (url.includes('/raw/')) return url; // Raw files don't support fl_attachment
+            return url.replace(/\/upload\//, '/upload/fl_attachment/');
+        }
+        return url;
+    };
 
     const handleUpload = async (e) => {
         e.preventDefault();
@@ -79,7 +156,11 @@ export default function CourseView() {
         }
     };
 
-    const handleDelete = async (fileId) => {
+    const handleDelete = async (e, fileId) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("Delete requested for file:", fileId);
+
         if (!isAdmin) {
             if (!window.confirm("Send deletion request for this file?")) return;
             try {
@@ -123,11 +204,7 @@ export default function CourseView() {
         }
     };
 
-    const [isAddingExam, setIsAddingExam] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editingExamId, setEditingExamId] = useState(null);
-    const [newExam, setNewExam] = useState({ title: '', date: '', time: '', syllabus: '' });
-
+    // Exam Form Helper Functions
     const resetExamForm = () => {
         setIsAddingExam(false);
         setIsEditing(false);
@@ -513,8 +590,7 @@ export default function CourseView() {
                                             <span className="hidden sm:inline">Open</span>
                                         </a>
                                         <a
-                                            href={file.path}
-                                            download
+                                            href={getDownloadUrl(file.path)}
                                             className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                             title="Download"
                                         >
@@ -522,7 +598,7 @@ export default function CourseView() {
                                         </a>
                                         {(hasPermission('courses_edit') || hasPermission('course_materials_edit')) && (
                                             <button
-                                                onClick={() => handleDelete(file.id)}
+                                                onClick={(e) => handleDelete(e, file.id)}
                                                 className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                                                 title="Delete File"
                                             >

@@ -73,6 +73,7 @@ export default function Schedule() {
         fetchSchedule();
         fetchCourses();
         fetchSettings();
+        fetchRoutine();
     }, []);
 
     const fetchSchedule = async () => {
@@ -103,6 +104,18 @@ export default function Schedule() {
             }
         } catch (error) {
             console.error("Failed to fetch settings:", error);
+        }
+    };
+
+    const fetchRoutine = async () => {
+        try {
+            const res = await fetch("/api/schedule/routine");
+            const data = await res.json();
+            if (data.success && data.url) {
+                setRoutineUrl(data.url);
+            }
+        } catch (error) {
+            console.error("Failed to fetch routine:", error);
         }
     };
 
@@ -242,8 +255,8 @@ export default function Schedule() {
             });
             const data = await res.json();
             if (res.ok) {
-                // Update URL with timestamp to force refresh
-                setRoutineUrl(`/routine.png?t=${data.timestamp}`);
+                // Update URL with timestamp to force refresh is not needed if URL changes, but beneficial if same URL
+                setRoutineUrl(data.url);
                 alert("Routine updated successfully!");
             } else {
                 alert("Failed to upload");
@@ -263,12 +276,13 @@ export default function Schedule() {
         const isOddWeek = weekNum % 2 !== 0;
 
         return schedule.filter(event => {
+            if (!event || !event.day || !event.startTime || !event.endTime) return false;
             if (event.day !== dayName) return false;
             // Alter class logic
             if (event.recurrence === "odd" && !isOddWeek) return false;
             if (event.recurrence === "even" && isOddWeek) return false;
             return true;
-        }).sort((a, b) => a.startTime.localeCompare(b.startTime));
+        }).sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
     };
 
     const getWeekStartDate = (date) => {

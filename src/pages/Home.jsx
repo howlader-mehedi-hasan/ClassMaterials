@@ -1,34 +1,50 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Link } from "react-router-dom";
 import { BookOpen, Calendar, FileText, Bell, Clock, ArrowRight, Activity, Edit, Check, X } from "lucide-react";
-import courses from "../data/courses.json";
-import notices from "../data/notices.json";
 import DailyRoutine from "../components/DailyRoutine";
 
 export default function Home() {
-    const { isAdmin, hasPermission } = useAuth();
+    const { user, isAdmin, hasPermission } = useAuth();
     const today = new Date();
-    const [welcomeMessage, setWelcomeMessage] = useState("Welcome to ClassMaterials Dashboard");
+    const [welcomeMessage, setWelcomeMessage] = useState("Welcome back! Here's what's happening today.");
     const [isEditingMessage, setIsEditingMessage] = useState(false);
     const [tempMessage, setTempMessage] = useState("");
-    const [settings, setSettings] = useState({});
+    const [courses, setCourses] = useState([]);
+    const [notices, setNotices] = useState([]);
+    const [loading, setLoading] = useState(true);
+    // settings state is no longer needed as it's only used for welcomeMessage
 
-    // Fetch Settings on Mount
     useEffect(() => {
-        fetch("/api/settings")
-            .then(res => res.json())
-            .then(data => {
-                setSettings(data);
-                if (data.welcomeMessage) {
-                    setWelcomeMessage(data.welcomeMessage);
+        const fetchData = async () => {
+            try {
+                const [coursesRes, noticesRes, settingsRes] = await Promise.all([
+                    fetch("/api/courses"),
+                    fetch("/api/notices"),
+                    fetch("/api/settings")
+                ]);
+
+                if (coursesRes.ok) setCourses(await coursesRes.json());
+                if (noticesRes.ok) setNotices(await noticesRes.json());
+                if (settingsRes.ok) {
+                    const settingsData = await settingsRes.json();
+                    if (settingsData.welcomeMessage) {
+                        setWelcomeMessage(settingsData.welcomeMessage);
+                    }
                 }
-            })
-            .catch(err => console.error("Failed to fetch settings", err));
+            } catch (error) {
+                console.error("Failed to fetch home data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
     }, []);
 
     const handleSaveMessage = async () => {
-        const newSettings = { ...settings, welcomeMessage: tempMessage };
+        // We only need to send the welcomeMessage part of settings
+        const newSettings = { welcomeMessage: tempMessage };
         try {
             const res = await fetch("/api/settings", {
                 method: "POST",

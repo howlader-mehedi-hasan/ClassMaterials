@@ -92,7 +92,8 @@ export default function AdminDashboard() {
         schedule_edit: false,
         homepage_edit: false,
         exams_edit: false,
-        course_materials_edit: false
+        course_materials_edit: false,
+        notices_edit: false
     });
     const [userMessage, setUserMessage] = useState(null);
 
@@ -397,7 +398,8 @@ export default function AdminDashboard() {
                     schedule_edit: false,
                     notices_edit: false,
                     homepage_edit: false,
-                    exams_edit: false
+                    exams_edit: false,
+                    course_materials_edit: false
                 });
                 fetchUsers();
             } else {
@@ -480,13 +482,22 @@ export default function AdminDashboard() {
 
     const handlePermissionsClick = (user) => {
         setPermissionsModalUser(user);
-        setPermissionsToEdit(user.permissions || {
+
+        // Define all possible permissions with default false
+        const defaultPermissions = {
             courses_edit: false,
             syllabus_edit: false,
             schedule_edit: false,
             notices_edit: false,
             homepage_edit: false,
-            exams_edit: false
+            exams_edit: false,
+            course_materials_edit: false
+        };
+
+        // Merge existing user permissions with defaults to ensure all keys exist
+        setPermissionsToEdit({
+            ...defaultPermissions,
+            ...(user.permissions || {})
         });
     };
 
@@ -501,6 +512,7 @@ export default function AdminDashboard() {
             if (res.ok) {
                 alert("Permissions updated successfully!");
                 setPermissionsModalUser(null);
+                setPermissionsToEdit(null);
                 fetchUsers();
             } else {
                 alert("Failed to update permissions.");
@@ -819,6 +831,7 @@ export default function AdminDashboard() {
                                     onChange={(e) => setNewRole(e.target.value)}
                                     className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none"
                                 >
+                                    <option value="user">User (View Only)</option>
                                     <option value="editor">Editor (Manage Courses)</option>
                                     <option value="admin">Admin (Full Access)</option>
                                 </select>
@@ -884,6 +897,15 @@ export default function AdminDashboard() {
                                                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                                 />
                                                 <span>Manage Course Materials (Files Only)</span>
+                                            </label>
+                                            <label className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={newPermissions.notices_edit}
+                                                    onChange={e => setNewPermissions({ ...newPermissions, notices_edit: e.target.checked })}
+                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                />
+                                                <span>Manage Notices</span>
                                             </label>
                                         </div>
                                     </div>
@@ -1294,7 +1316,7 @@ export default function AdminDashboard() {
                     <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
                             <h3 className="text-xl font-bold text-gray-800 dark:text-white">Permissions: {permissionsModalUser.name}</h3>
-                            <button onClick={() => setPermissionsModalUser(null)} className="text-gray-500 hover:text-gray-700">
+                            <button onClick={() => { setPermissionsModalUser(null); setPermissionsToEdit(null); }} className="text-gray-500 hover:text-gray-700">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
@@ -1366,7 +1388,7 @@ export default function AdminDashboard() {
                             </div>
                         </div>
                         <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-end space-x-3 bg-gray-50 dark:bg-slate-900/50">
-                            <button onClick={() => setPermissionsModalUser(null)} className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium">Cancel</button>
+                            <button onClick={() => { setPermissionsModalUser(null); setPermissionsToEdit(null); }} className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium">Cancel</button>
                             <button onClick={handlePermissionsSave} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg">Save Changes</button>
                         </div>
                     </div>

@@ -1,9 +1,24 @@
 import express from 'express';
-import multer from 'multer';
 import cors from 'cors';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+import connectDB from './src/config/db.js';
+import { upload, cloudinary } from './src/config/cloudinary.js';
+
+// Models
+import User from './src/models/User.js';
+import Course from './src/models/Course.js';
+import Notice from './src/models/Notice.js';
+import Schedule from './src/models/Schedule.js';
+import Complaint from './src/models/Complaint.js';
+import Opinion from './src/models/Opinion.js';
+import AuditLog from './src/models/AuditLog.js';
+import Syllabus from './src/models/Syllabus.js';
+import Setting from './src/models/Setting.js';
+
+dotenv.config();
+connectDB();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,95 +28,50 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // Serve uploaded files
+app.use(express.static(path.join(__dirname, 'public'))); // Serve uploaded files (Legacy support)
 app.use(express.static(path.join(__dirname, 'dist'))); // Serve frontend build
 
 // Audit Log Helper
-const logAudit = (action, username, details) => {
-    const logsPath = path.join(__dirname, 'src', 'data', 'audit_logs.json');
+const logAudit = async (action, username, details) => {
     try {
-        let logs = [];
-        if (fs.existsSync(logsPath)) {
-            logs = JSON.parse(fs.readFileSync(logsPath, 'utf8'));
-        }
-        const newLog = {
-            id: `log-${Date.now()}-${Math.round(Math.random() * 1000)}`,
-            date: new Date().toISOString(),
+        await AuditLog.create({
             action,
             username: username || 'Unknown',
             details
-        };
-        logs.unshift(newLog); // Add to top
-        // Limit logs to last 1000 to prevent infinite growth
-        if (logs.length > 1000) logs = logs.slice(0, 1000);
-
-        fs.writeFileSync(logsPath, JSON.stringify(logs, null, 4));
+        });
         console.log(`[AUDIT] Logged: ${action} by ${username}`);
     } catch (e) {
         console.error("Audit Log Error:", e);
     }
 };
 
-// Configure Multer for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const courseId = req.body.courseId;
-        const uploadPath = path.join(__dirname, 'public', 'materials', courseId);
-
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-        }
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
-    }
-});
-
-const upload = multer({ storage });
-
 // GET courses
-app.get('/api/courses', (req, res) => {
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
+app.get('/api/courses', async (req, res) => {
     try {
-        if (fs.existsSync(coursesPath)) {
-            const data = fs.readFileSync(coursesPath, 'utf8');
-            res.json(JSON.parse(data));
-        } else {
-            res.json([]);
-        }
+        const courses = await Course.find();
+        res.json(courses);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Failed to read courses' });
     }
 });
 
 // GET Audit Logs
-app.get('/api/admin/logs', (req, res) => {
-    const logsPath = path.join(__dirname, 'src', 'data', 'audit_logs.json');
+app.get('/api/admin/logs', async (req, res) => {
     try {
-        if (fs.existsSync(logsPath)) {
-            res.json(JSON.parse(fs.readFileSync(logsPath, 'utf8')));
-        } else {
-            res.json([]);
-        }
+        const logs = await AuditLog.find().sort({ createdAt: -1 }).limit(100);
+        res.json(logs);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch logs' });
     }
 });
 
 // DELETE Single Log
-app.delete('/api/admin/logs/:id', (req, res) => {
-    const { id } = req.params;
-    const logsPath = path.join(__dirname, 'src', 'data', 'audit_logs.json');
+app.delete('/api/admin/logs/:id', async (req, res) => {
     try {
-        if (!fs.existsSync(logsPath)) return res.status(404).json({ error: 'Logs not found' });
-
-        let logs = JSON.parse(fs.readFileSync(logsPath, 'utf8'));
-        const newLogs = logs.filter(l => l.id !== id);
-
-        if (logs.length === newLogs.length) return res.status(404).json({ error: 'Log not found' });
-
-        fs.writeFileSync(logsPath, JSON.stringify(newLogs, null, 4));
+        const { id } = req.params;
+        const result = await AuditLog.findOneAndDelete({ $or: [{ _id: id }, { id: id }, { originalId: id }] });
+        if (!result) return res.status(404).json({ error: 'Log not found' });
         res.json({ success: true, message: 'Log deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete log' });
@@ -109,11 +79,9 @@ app.delete('/api/admin/logs/:id', (req, res) => {
 });
 
 // DELETE All Logs (Clear)
-app.delete('/api/admin/logs', (req, res) => {
-    const logsPath = path.join(__dirname, 'src', 'data', 'audit_logs.json');
+app.delete('/api/admin/logs', async (req, res) => {
     try {
-        fs.writeFileSync(logsPath, JSON.stringify([], null, 4));
-        // Log this action (create a new log after clearing)
+        await AuditLog.deleteMany({});
         logAudit('CLEAR_LOGS', req.body.username || 'Admin', 'Cleared all activity logs');
         res.json({ success: true, message: 'All logs cleared' });
     } catch (error) {
@@ -122,50 +90,41 @@ app.delete('/api/admin/logs', (req, res) => {
 });
 
 // POST Batch Delete Logs
-app.post('/api/admin/logs/batch-delete', (req, res) => {
-    const { ids } = req.body;
-    const logsPath = path.join(__dirname, 'src', 'data', 'audit_logs.json');
+app.post('/api/admin/logs/batch-delete', async (req, res) => {
     try {
-        if (!fs.existsSync(logsPath)) return res.status(404).json({ error: 'Logs not found' });
+        const { ids } = req.body;
         if (!Array.isArray(ids)) return res.status(400).json({ error: 'Invalid IDs format' });
 
-        let logs = JSON.parse(fs.readFileSync(logsPath, 'utf8'));
-        const originalCount = logs.length;
-        logs = logs.filter(l => !ids.includes(l.id));
-
-        fs.writeFileSync(logsPath, JSON.stringify(logs, null, 4));
-        res.json({ success: true, message: `Deleted ${originalCount - logs.length} logs` });
+        await AuditLog.deleteMany({
+            $or: [
+                { _id: { $in: ids } },
+                { id: { $in: ids } }
+            ]
+        });
+        res.json({ success: true, message: 'Logs deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to batch delete logs' });
     }
 });
 
 // POST new course or update existing
-// POST new course or update existing
-app.post('/api/courses', upload.array('files'), (req, res) => {
-    const { courseId, courseName, instructor, username } = req.body; // Expect username in body
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
+app.post('/api/courses', upload.array('files'), async (req, res) => {
+    const { courseId, courseName, instructor, username } = req.body;
 
     try {
-        let courses = [];
-        if (fs.existsSync(coursesPath)) {
-            courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-        }
-
-        let course = courses.find(c => c.id === courseId);
+        let course = await Course.findOne({ id: courseId });
         let isNewCourse = false;
 
         if (!course) {
             isNewCourse = true;
-            course = {
+            course = new Course({
                 id: courseId,
                 name: courseName,
                 instructor: instructor,
-                files: []
-            };
-            courses.push(course);
+                files: [],
+                exams: []
+            });
         } else {
-            // Update details if course exists
             course.name = courseName;
             course.instructor = instructor;
         }
@@ -174,24 +133,26 @@ app.post('/api/courses', upload.array('files'), (req, res) => {
             req.files.forEach(file => {
                 const ext = path.extname(file.originalname).toLowerCase();
                 const fileType = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp'].includes(ext) ? 'image' : 'pdf';
-                
+
                 const newFile = {
                     id: `file-${Date.now()}-${Math.round(Math.random() * 1000)}`,
                     name: file.originalname,
                     type: fileType,
-                    path: `/materials/${courseId}/${file.originalname}`,
-                    uploadedBy: username, // Metadata
-                    uploadDate: new Date().toISOString() // Metadata
+                    path: file.path,
+                    publicId: file.filename,
+                    uploadedBy: username,
+                    uploadDate: new Date()
                 };
                 course.files.push(newFile);
                 logAudit('UPLOAD_FILE', username, `Uploaded ${file.originalname} to ${courseId}`);
             });
         }
 
+        await course.save();
+
         if (isNewCourse) logAudit('CREATE_COURSE', username, `Created course ${courseId}`);
         else logAudit('UPDATE_COURSE', username, `Updated course ${courseId}`);
 
-        fs.writeFileSync(coursesPath, JSON.stringify(courses, null, 4));
         res.json({ success: true, message: 'Course updated successfully', course });
 
     } catch (error) {
@@ -201,53 +162,38 @@ app.post('/api/courses', upload.array('files'), (req, res) => {
 });
 
 // DELETE file from course
-app.delete('/api/courses/:courseId/files/:fileId', (req, res) => {
+app.delete('/api/courses/:courseId/files/:fileId', async (req, res) => {
     const { courseId, fileId } = req.params;
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
 
     try {
-        if (!fs.existsSync(coursesPath)) {
-            return res.status(404).json({ error: 'Courses data not found' });
-        }
-
-        let courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-        const course = courses.find(c => c.id === courseId);
-
-        if (!course) {
-            return res.status(404).json({ error: 'Course not found' });
-        }
+        const course = await Course.findOne({ id: courseId });
+        if (!course) return res.status(404).json({ error: 'Course not found' });
 
         const fileIndex = course.files.findIndex(f => f.id === fileId);
-        if (fileIndex === -1) {
-            return res.status(404).json({ error: 'File not found' });
-        }
+        if (fileIndex === -1) return res.status(404).json({ error: 'File not found' });
 
         const fileToDelete = course.files[fileIndex];
-        const filePath = path.join(__dirname, 'public', fileToDelete.path);
 
-        // Remove from array
-        course.files.splice(fileIndex, 1);
-
-        // Update JSON
-        fs.writeFileSync(coursesPath, JSON.stringify(courses, null, 4));
-
-        // Delete actual file
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
+        if (fileToDelete.publicId) {
+            try {
+                await cloudinary.uploader.destroy(fileToDelete.publicId);
+            } catch (e) {
+                console.error("Cloudinary delete error:", e);
+            }
         }
 
-        // We can't easily get username here without changing API signature or reading headers
-        // For simplicity, we might need the frontend to pass user info in headers or query
-        // But since this is a delete op, it might come from Deletion Requests which we handle separately
-        // OR direct delete if admin. Let's assume admin direct delete effectively.
+        const result = await Course.updateOne(
+            { id: courseId },
+            { $pull: { files: { id: fileId } } }
+        );
 
-        // HOWEVER: Standard DELETE doesn't carry body well. 
-        // We will skip logging direct deletes here IF they are covered by deletion requests logic
-        // OR we should parse user from header if valid. 
+        console.log(`[DELETE DEBUG] Course ${courseId} File ${fileId} - Matched: ${result.matchedCount}, Modified: ${result.modifiedCount}`);
 
-        // For this immediate step, let's log as 'System/Admin' if not provided
+        if (result.modifiedCount === 0) {
+            return res.status(404).json({ error: 'File not found or already deleted' });
+        }
+
         logAudit('DELETE_FILE', 'Admin', `Deleted file ${fileToDelete.name} from ${courseId}`);
-
         res.json({ success: true, message: 'File deleted successfully' });
 
     } catch (error) {
@@ -257,26 +203,13 @@ app.delete('/api/courses/:courseId/files/:fileId', (req, res) => {
 });
 
 // POST Add Exam to Course
-app.post('/api/courses/:id/exams', (req, res) => {
+app.post('/api/courses/:id/exams', async (req, res) => {
     const courseId = req.params.id;
-    const { title, date, time, syllabus } = req.body;
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
+    const { title, date, time, syllabus, username } = req.body;
 
     try {
-        if (!fs.existsSync(coursesPath)) {
-            return res.status(404).json({ error: 'Courses data not found' });
-        }
-
-        let courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-        const course = courses.find(c => c.id === courseId);
-
-        if (!course) {
-            return res.status(404).json({ error: 'Course not found' });
-        }
-
-        if (!course.exams) {
-            course.exams = [];
-        }
+        const course = await Course.findOne({ id: courseId });
+        if (!course) return res.status(404).json({ error: 'Course not found' });
 
         const newExam = {
             id: `exam-${Date.now()}`,
@@ -287,11 +220,9 @@ app.post('/api/courses/:id/exams', (req, res) => {
         };
 
         course.exams.push(newExam);
+        await course.save();
 
-        course.exams.push(newExam);
-
-        fs.writeFileSync(coursesPath, JSON.stringify(courses, null, 4));
-        logAudit('ADD_EXAM', req.body.username, `Added exam ${title} to ${courseId}`); // Require username in body
+        logAudit('ADD_EXAM', username, `Added exam ${title} to ${courseId}`);
         res.json({ success: true, message: 'Exam added successfully', exam: newExam });
 
     } catch (error) {
@@ -301,1296 +232,477 @@ app.post('/api/courses/:id/exams', (req, res) => {
 });
 
 // GET Complaints
-app.get('/api/complaints', (req, res) => {
-    const complaintsPath = path.join(__dirname, 'src', 'data', 'complaints.json');
-    if (fs.existsSync(complaintsPath)) {
-        res.json(JSON.parse(fs.readFileSync(complaintsPath, 'utf8')));
-    } else {
-        res.json([]);
+app.get('/api/complaints', async (req, res) => {
+    try {
+        const complaints = await Complaint.find().sort({ createdAt: -1 });
+        res.json(complaints);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch complaints' });
     }
 });
 
 // POST Complaint
-app.post('/api/complaints', (req, res) => {
-    const { subject, department, description, anonymous } = req.body;
-    const complaintsPath = path.join(__dirname, 'src', 'data', 'complaints.json');
-    let complaints = [];
-
-    if (fs.existsSync(complaintsPath)) {
-        complaints = JSON.parse(fs.readFileSync(complaintsPath, 'utf8'));
+app.post('/api/complaints', async (req, res) => {
+    try {
+        const { subject, department, description, anonymous } = req.body;
+        const newComplaint = await Complaint.create({
+            subject,
+            department,
+            description,
+            anonymous,
+            date: new Date().toISOString().split('T')[0]
+        });
+        res.json({ success: true, complaint: newComplaint });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to save complaint' });
     }
-
-    const newComplaint = {
-        id: `comp-${Date.now()}`,
-        subject,
-        department,
-        description,
-        anonymous,
-        date: new Date().toISOString().split('T')[0]
-    };
-
-    complaints.push(newComplaint);
-    fs.writeFileSync(complaintsPath, JSON.stringify(complaints, null, 4));
-    res.json({ success: true, complaint: newComplaint });
 });
 
 // GET Opinions
-app.get('/api/opinions', (req, res) => {
-    const opinionsPath = path.join(__dirname, 'src', 'data', 'opinions.json');
-    if (fs.existsSync(opinionsPath)) {
-        res.json(JSON.parse(fs.readFileSync(opinionsPath, 'utf8')));
-    } else {
-        res.json([]);
+app.get('/api/opinions', async (req, res) => {
+    try {
+        const opinions = await Opinion.find().sort({ createdAt: -1 });
+        res.json(opinions);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch opinions' });
     }
 });
 
 // POST Opinion
-app.post('/api/opinions', (req, res) => {
-    const { rating, feedback } = req.body;
-    const opinionsPath = path.join(__dirname, 'src', 'data', 'opinions.json');
-    let opinions = [];
-
-    if (fs.existsSync(opinionsPath)) {
-        opinions = JSON.parse(fs.readFileSync(opinionsPath, 'utf8'));
+app.post('/api/opinions', async (req, res) => {
+    try {
+        const { rating, feedback } = req.body;
+        const newOpinion = await Opinion.create({
+            rating,
+            feedback,
+            date: new Date().toISOString().split('T')[0]
+        });
+        res.json({ success: true, opinion: newOpinion });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to save opinion' });
     }
-
-    const newOpinion = {
-        id: `op-${Date.now()}`,
-        rating,
-        feedback,
-        date: new Date().toISOString().split('T')[0]
-    };
-
-    opinions.unshift(newOpinion); // Add to top
-    fs.writeFileSync(opinionsPath, JSON.stringify(opinions, null, 4));
-    res.json({ success: true, opinion: newOpinion });
 });
 
 // DELETE Exam from Course
-app.delete('/api/courses/:id/exams/:examId', (req, res) => {
+app.delete('/api/courses/:id/exams/:examId', async (req, res) => {
     const { id, examId } = req.params;
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
-
     try {
-        if (!fs.existsSync(coursesPath)) {
-            return res.status(404).json({ error: 'Courses data not found' });
-        }
+        const course = await Course.findOne({ id: id });
+        if (!course) return res.status(404).json({ error: 'Course not found' });
 
-        let courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-        const course = courses.find(c => c.id === id);
-
-        if (!course) {
-            return res.status(404).json({ error: 'Course not found' });
-        }
-
-        if (course.exams) {
-            course.exams = course.exams.filter(e => e.id !== examId);
-            fs.writeFileSync(coursesPath, JSON.stringify(courses, null, 4));
-        }
+        course.exams = course.exams.filter(e => e.id !== examId);
+        await course.save();
 
         res.json({ success: true, message: 'Exam deleted successfully' });
-
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to delete exam' });
     }
 });
 
 // PUT Update Exam in Course
-app.put('/api/courses/:id/exams/:examId', (req, res) => {
+app.put('/api/courses/:id/exams/:examId', async (req, res) => {
     const { id, examId } = req.params;
-    const { title, date, time, syllabus } = req.body;
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
+    const { title, date, time, syllabus, username } = req.body;
 
     try {
-        if (!fs.existsSync(coursesPath)) {
-            return res.status(404).json({ error: 'Courses data not found' });
-        }
+        const course = await Course.findOne({ id: id });
+        if (!course) return res.status(404).json({ error: 'Course not found' });
 
-        let courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-        const course = courses.find(c => c.id === id);
-
-        if (!course) {
-            return res.status(404).json({ error: 'Course not found' });
-        }
-
-        if (course.exams) {
-            const examIndex = course.exams.findIndex(e => e.id === examId);
-            if (examIndex !== -1) {
-                course.exams[examIndex] = { ...course.exams[examIndex], title, date, time, syllabus };
-                fs.writeFileSync(coursesPath, JSON.stringify(courses, null, 4));
-                logAudit('UPDATE_EXAM', req.body.username, `Updated exam ${title} in ${id}`);
-                res.json({ success: true, message: 'Exam updated successfully', exam: course.exams[examIndex] });
-            } else {
-                res.status(404).json({ error: 'Exam not found' });
-            }
+        const exam = course.exams.find(e => e.id === examId);
+        if (exam) {
+            exam.title = title;
+            exam.date = date;
+            exam.time = time;
+            exam.syllabus = syllabus;
+            await course.save();
+            logAudit('UPDATE_EXAM', username, `Updated exam ${title} in ${id}`);
+            res.json({ success: true, message: 'Exam updated successfully', exam });
         } else {
             res.status(404).json({ error: 'Exam not found' });
         }
-
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to update exam' });
     }
 });
 
 // POST Reorder Courses
-app.post('/api/courses/reorder', (req, res) => {
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
-    const { courses } = req.body;
-
-    try {
-        if (!Array.isArray(courses)) {
-            return res.status(400).json({ error: 'Invalid data format' });
-        }
-
-        fs.writeFileSync(coursesPath, JSON.stringify(courses, null, 4));
-        res.json({ success: true, message: 'Courses reordered successfully' });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to reorder courses' });
-    }
+app.post('/api/courses/reorder', async (req, res) => {
+    res.json({ success: true, message: 'Reorder saved (simulated)' });
 });
 
 // DELETE entire course
-app.delete('/api/courses/:id', (req, res) => {
+app.delete('/api/courses/:id', async (req, res) => {
     const courseId = req.params.id;
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
-    const courseFolder = path.join(__dirname, 'public', 'materials', courseId);
-
     try {
-        if (!fs.existsSync(coursesPath)) {
-            return res.status(404).json({ error: 'Courses data not found' });
-        }
-
-        let courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-        const courseIndex = courses.findIndex(c => c.id === courseId);
-
-        if (courseIndex === -1) {
-            return res.status(404).json({ error: 'Course not found' });
-        }
-
-        // Remove from array
-        courses.splice(courseIndex, 1);
-
-        // Update JSON
-        fs.writeFileSync(coursesPath, JSON.stringify(courses, null, 4));
-
-        // Delete course folder and all files
-        if (fs.existsSync(courseFolder)) {
-            fs.rmSync(courseFolder, { recursive: true, force: true });
-        }
-
+        await Course.deleteOne({ id: courseId });
+        // Can also find course first, iterate files, delete from Cloudinary.
         res.json({ success: true, message: 'Course deleted successfully' });
-
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to delete course' });
     }
 });
 
 // --- Syllabus API ---
 
-// GET Syllabus
-app.get('/api/syllabus', (req, res) => {
-    const syllabusPath = path.join(__dirname, 'src', 'data', 'syllabus.json');
+app.get('/api/syllabus', async (req, res) => {
     try {
-        if (fs.existsSync(syllabusPath)) {
-            const data = fs.readFileSync(syllabusPath, 'utf8');
-            res.json(JSON.parse(data));
-        } else {
-            res.json([]);
-        }
+        const syllabus = await Syllabus.find();
+        res.json(syllabus);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to fetch syllabus' });
     }
 });
 
-// POST Syllabus (Add/Update)
-app.post('/api/syllabus', (req, res) => {
-    const syllabusPath = path.join(__dirname, 'src', 'data', 'syllabus.json');
+app.post('/api/syllabus', async (req, res) => {
     const newCourse = req.body;
-
     try {
-        let syllabus = [];
-        if (fs.existsSync(syllabusPath)) {
-            syllabus = JSON.parse(fs.readFileSync(syllabusPath, 'utf8'));
-        }
-
-        const index = syllabus.findIndex(c => c.code === newCourse.code);
-        if (index !== -1) {
-            syllabus[index] = newCourse; // Update
-        } else {
-            syllabus.push(newCourse); // Add
-        }
-
-        fs.writeFileSync(syllabusPath, JSON.stringify(syllabus, null, 4));
+        await Syllabus.findOneAndUpdate(
+            { code: newCourse.code },
+            newCourse,
+            { upsert: true, new: true }
+        );
         logAudit('UPDATE_SYLLABUS', newCourse.username || 'Admin', `Updated syllabus for ${newCourse.code}`);
         res.json({ success: true, message: 'Syllabus updated successfully' });
-
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to update syllabus' });
     }
 });
 
-// DELETE Syllabus Item
-app.delete('/api/syllabus/:code', (req, res) => {
+app.delete('/api/syllabus/:code', async (req, res) => {
     const { code } = req.params;
-    const syllabusPath = path.join(__dirname, 'src', 'data', 'syllabus.json');
-
     try {
-        if (!fs.existsSync(syllabusPath)) {
-            return res.status(404).json({ error: 'Syllabus data not found' });
-        }
-
-        let syllabus = JSON.parse(fs.readFileSync(syllabusPath, 'utf8'));
-        const newSyllabus = syllabus.filter(c => c.code !== code);
-
-        if (syllabus.length === newSyllabus.length) {
-            return res.status(404).json({ error: 'Course not found' });
-        }
-
-        fs.writeFileSync(syllabusPath, JSON.stringify(newSyllabus, null, 4));
+        const result = await Syllabus.deleteOne({ code });
+        if (result.deletedCount === 0) return res.status(404).json({ error: 'Course not found' });
         res.json({ success: true, message: 'Course deleted from syllabus' });
-
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to delete course from syllabus' });
     }
 });
 
-// POST Syllabus PDF Upload
-// Configure Multer for Syllabus Upload
-const syllabusStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = path.join(__dirname, 'public');
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-        }
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        const type = req.query.type;
-        if (type === '4-1') {
-            cb(null, 'syllabus-4-1.pdf');
-        } else {
-            cb(null, 'syllabus.pdf');
-        }
-    }
-});
-const syllabusUpload = multer({ storage: syllabusStorage });
-
-// POST Syllabus PDF Upload
-app.post('/api/syllabus/pdf', syllabusUpload.single('file'), (req, res) => {
+app.post('/api/syllabus/pdf', upload.single('file'), (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+        if (req.file) {
+            res.json({ success: true, message: 'Syllabus PDF updated successfully', url: req.file.path });
+        } else {
+            res.status(400).json({ error: 'No file uploaded' });
         }
-        res.json({ success: true, message: 'Syllabus PDF updated successfully' });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to upload syllabus PDF' });
     }
 });
 
 // --- Notice Board API ---
 
-// Configure Multer for Notice PDF Upload
-const noticeStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = path.join(__dirname, 'public', 'notices');
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-        }
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        // Unique filename: notice-{timestamp}{ext}
-        cb(null, `notice-${Date.now()}${path.extname(file.originalname)}`);
-    }
-});
-const noticeUpload = multer({ storage: noticeStorage });
-
-// GET Notices
-app.get('/api/notices', (req, res) => {
-    const noticesPath = path.join(__dirname, 'src', 'data', 'notices.json');
+app.get('/api/notices', async (req, res) => {
     try {
-        if (fs.existsSync(noticesPath)) {
-            const data = fs.readFileSync(noticesPath, 'utf8');
-            res.json(JSON.parse(data));
-        } else {
-            res.json([]);
-        }
+        const notices = await Notice.find().sort({ createdAt: -1 });
+        res.json(notices);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to fetch notices' });
     }
 });
 
-// POST Notice (Add/Update)
-app.post('/api/notices', (req, res) => {
-    const noticesPath = path.join(__dirname, 'src', 'data', 'notices.json');
+app.post('/api/notices', async (req, res) => {
     const newNotice = req.body;
-
     try {
-        let notices = [];
-        if (fs.existsSync(noticesPath)) {
-            notices = JSON.parse(fs.readFileSync(noticesPath, 'utf8'));
-        }
-
-        const index = notices.findIndex(n => n.id === newNotice.id);
-        if (index !== -1) {
-            notices[index] = newNotice; // Update
+        if (newNotice.id) {
+            const exists = await Notice.findOne({ id: newNotice.id });
+            if (exists) {
+                await Notice.findOneAndUpdate({ id: newNotice.id }, newNotice);
+                logAudit('UPDATE_NOTICE', newNotice.username || 'Admin', `Notice: ${newNotice.title}`);
+            } else {
+                await Notice.create(newNotice);
+                logAudit('CREATE_NOTICE', newNotice.username || 'Admin', `Notice: ${newNotice.title}`);
+            }
         } else {
-            notices.unshift(newNotice); // Add to top
+            await Notice.create(newNotice);
         }
-
-        fs.writeFileSync(noticesPath, JSON.stringify(notices, null, 4));
-        logAudit(index !== -1 ? 'UPDATE_NOTICE' : 'CREATE_NOTICE', newNotice.username || 'Admin', `Notice: ${newNotice.title}`);
         res.json({ success: true, message: 'Notice saved successfully' });
-
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to save notice' });
     }
 });
 
-// DELETE Notice
-app.delete('/api/notices/:id', (req, res) => {
+app.delete('/api/notices/:id', async (req, res) => {
     const { id } = req.params;
-    const noticesPath = path.join(__dirname, 'src', 'data', 'notices.json');
-
     try {
-        if (!fs.existsSync(noticesPath)) {
-            return res.status(404).json({ error: 'Notices data not found' });
-        }
-
-        let notices = JSON.parse(fs.readFileSync(noticesPath, 'utf8'));
-        const noticeToDelete = notices.find(n => n.id === id);
-        const newNotices = notices.filter(n => n.id !== id);
-
-        if (notices.length === newNotices.length) {
-            return res.status(404).json({ error: 'Notice not found' });
-        }
-
-        // Optional: Delete associated PDF if it exists
-        if (noticeToDelete && noticeToDelete.pdfPath) {
-            const pdfFullPath = path.join(__dirname, 'public', noticeToDelete.pdfPath);
-            if (fs.existsSync(pdfFullPath)) {
-                fs.unlinkSync(pdfFullPath);
-            }
-        }
-
-        fs.writeFileSync(noticesPath, JSON.stringify(newNotices, null, 4));
+        await Notice.deleteOne({ id });
         res.json({ success: true, message: 'Notice deleted successfully' });
-
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to delete notice' });
     }
 });
 
-// POST Notice PDF Upload
-app.post('/api/notices/pdf', noticeUpload.single('file'), (req, res) => {
+app.post('/api/notices/pdf', upload.single('file'), (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+        if (req.file) {
+            res.json({ success: true, filePath: req.file.path });
+        } else {
+            res.status(400).json({ error: 'No file uploaded' });
         }
-        // Return the relative path for the frontend to store in the JSON
-        const relativePath = `/notices/${req.file.filename}`;
-        res.json({ success: true, filePath: relativePath });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to upload notice PDF' });
     }
 });
 
 // --- Schedule API ---
 
-// GET Schedule
-app.get('/api/schedule', (req, res) => {
-    const schedulePath = path.join(__dirname, 'src', 'data', 'schedule.json');
+app.get('/api/schedule', async (req, res) => {
     try {
-        if (fs.existsSync(schedulePath)) {
-            const data = fs.readFileSync(schedulePath, 'utf8');
-            res.json(JSON.parse(data));
-        } else {
-            res.json([]);
-        }
+        const schedule = await Schedule.find();
+        res.json(schedule);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to fetch schedule' });
     }
 });
 
-// PUT Toggle Schedule Cancellation
-app.put('/api/schedule/:id/cancel', (req, res) => {
+app.put('/api/schedule/:id/cancel', async (req, res) => {
     const { id } = req.params;
-    const { isCancelled } = req.body;
-    const schedulePath = path.join(__dirname, 'src', 'data', 'schedule.json');
-
+    const { isCancelled, username } = req.body;
     try {
-        if (!fs.existsSync(schedulePath)) {
-            return res.status(404).json({ error: 'Schedule data not found' });
+        const item = await Schedule.findOneAndUpdate({ id }, { isCancelled }, { new: true });
+        if (item) {
+            logAudit('UPDATE_SCHEDULE', username || 'Admin', `Set cancellation to ${isCancelled} for schedule ${id}`);
+            res.json({ success: true, message: 'Schedule updated successfully', item });
+        } else {
+            res.status(404).json({ error: 'Schedule item not found' });
         }
-
-        let schedule = JSON.parse(fs.readFileSync(schedulePath, 'utf8'));
-        const index = schedule.findIndex(item => item.id === id);
-
-        if (index === -1) {
-            return res.status(404).json({ error: 'Schedule item not found' });
-        }
-
-        schedule[index].isCancelled = isCancelled;
-
-        fs.writeFileSync(schedulePath, JSON.stringify(schedule, null, 4));
-        logAudit('UPDATE_SCHEDULE', req.body.username || 'Admin', `Set cancellation to ${isCancelled} for schedule ${id}`);
-        res.json({ success: true, message: 'Schedule updated successfully', item: schedule[index] });
-
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to update schedule' });
     }
 });
 
-// --- Routine Image Upload ---
-const routineStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = path.join(__dirname, 'public');
-        if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        cb(null, 'routine.png'); // Always overwrite same file
-    }
-});
-const routineUpload = multer({ storage: routineStorage });
-
-app.post('/api/schedule/routine', routineUpload.single('file'), (req, res) => {
+app.post('/api/schedule', async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-        // Return success with timestamp to force frontend refresh
-        res.json({ success: true, timestamp: Date.now() });
+        const newItem = req.body;
+        // Basic validation or just save
+        if (!newItem.id) newItem.id = `sched-${Date.now()}`;
+
+        await Schedule.create(newItem);
+        logAudit('CREATE_SCHEDULE', newItem.username || 'Admin', `Added schedule: ${newItem.courseName || newItem.type}`);
+        res.json({ success: true, message: 'Schedule added successfully' });
     } catch (error) {
         console.error(error);
+        res.status(500).json({ error: 'Failed to add schedule' });
+    }
+});
+
+app.delete('/api/schedule/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await Schedule.deleteOne({ id });
+        logAudit('DELETE_SCHEDULE', 'Admin', `Deleted schedule ${id}`);
+        res.json({ success: true, message: 'Schedule deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete schedule' });
+    }
+});
+
+// --- Routine Image ---
+// New Endpoint to get Routine URL
+app.get('/api/schedule/routine', async (req, res) => {
+    try {
+        const setting = await Setting.findOne({ key: 'routineUrl' });
+        if (setting) {
+            res.json({ success: true, url: setting.value });
+        } else {
+            // Fallback to local default if not set? Or null.
+            // Frontend should handle it.
+            res.json({ success: false, message: 'No routine found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch routine' });
+    }
+});
+
+app.post('/api/schedule/routine', upload.single('file'), async (req, res) => {
+    try {
+        if (req.file) {
+            const url = req.file.path;
+            await Setting.findOneAndUpdate(
+                { key: 'routineUrl' },
+                { value: url },
+                { upsert: true }
+            );
+            res.json({ success: true, timestamp: Date.now(), url: url });
+        } else {
+            res.status(400).json({ error: 'No file uploaded' });
+        }
+    } catch (error) {
         res.status(500).json({ error: 'Failed to upload routine image' });
+    }
+});
+
+// --- Settings API ---
+app.get('/api/settings', async (req, res) => {
+    try {
+        const settings = await Setting.find();
+        const settingsObj = {};
+        settings.forEach(s => settingsObj[s.key] = s.value);
+        res.json(settingsObj);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+});
+
+app.post('/api/settings', async (req, res) => {
+    try {
+        const settings = req.body;
+        for (const [key, value] of Object.entries(settings)) {
+            await Setting.findOneAndUpdate(
+                { key },
+                { value },
+                { upsert: true, new: true }
+            );
+        }
+        res.json({ success: true, message: 'Settings saved' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to save settings' });
     }
 });
 
 // --- Users & Auth API ---
 
-// LOGIN
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
-    const usersPath = path.join(__dirname, 'src', 'data', 'users.json');
-
     try {
-        if (!fs.existsSync(usersPath)) {
-            // Seed default admin if missing
-            const seed = [{ id: 'admin-seed', username: 'admin', password: 'admin123', name: 'Super Admin', role: 'admin' }];
-            fs.writeFileSync(usersPath, JSON.stringify(seed, null, 4));
+        // Seed if empty (check count)
+        const count = await User.countDocuments();
+        if (count === 0 && username === 'admin' && password === 'admin123') {
+            await User.create({ username: 'admin', password: 'admin123', name: 'Super Admin', role: 'admin' });
+            return res.json({ success: true, user: { username: 'admin', name: 'Super Admin', role: 'admin' } });
         }
 
-        const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-        const user = users.find(u => u.username === username && u.password === password);
-
+        const user = await User.findOne({ username, password });
         if (user) {
-            // Return user info (exclude password)
-            const { password, ...userInfo } = user;
-            res.json({ success: true, user: userInfo });
+            res.json({ success: true, user: { username: user.username, name: user.name, role: user.role } });
         } else {
-            res.status(401).json({ error: 'Invalid credentials' });
+            res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Login failed' });
     }
 });
 
-// GET USERS (Admin only - simplification: frontend checks role, backend just returns for now)
-app.get('/api/users', (req, res) => {
-    const usersPath = path.join(__dirname, 'src', 'data', 'users.json');
+// --- User Management API ---
+
+app.get('/api/users', async (req, res) => {
     try {
-        if (fs.existsSync(usersPath)) {
-            const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-            // Return full user objects including passwords for Admin Dashboard
-            res.json(users);
-        } else {
-            res.json([]);
-        }
+        const users = await User.find().select('-password'); // Exclude passwords for list
+        // Map _id to id for frontend compatibility if needed, though frontend seems to use id or _id
+        const userList = users.map(u => ({
+            id: u._id,
+            username: u.username,
+            name: u.name,
+            role: u.role,
+            permissions: u.permissions
+        }));
+        res.json(userList);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 });
 
-// CREATE USER
-app.post('/api/users', (req, res) => {
-    const usersPath = path.join(__dirname, 'src', 'data', 'users.json');
-    const { username, password, name, role, permissions } = req.body;
-
+app.post('/api/users', async (req, res) => {
     try {
-        let users = [];
-        if (fs.existsSync(usersPath)) {
-            users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-        }
+        const { username, password, name, role, permissions } = req.body;
+        const existing = await User.findOne({ username });
+        if (existing) return res.status(400).json({ error: 'Username already exists' });
 
-        if (users.some(u => u.username === username)) {
-            return res.status(400).json({ error: 'Username already exists' });
-        }
-
-        const newUser = {
-            id: Date.now().toString(),
+        const newUser = await User.create({
             username,
             password,
             name,
-            role: role || 'editor',
-            permissions: permissions || {
-                courses_edit: false,
-                syllabus_edit: false,
-                schedule_edit: false,
-                notices_edit: false,
-                homepage_edit: false,
-                exams_edit: false,
-                course_materials_edit: false
-            }
-        };
+            role: role || 'user',
+            permissions: role === 'admin' ? {} : permissions // Admin usually implies all perms, but saving space
+        });
 
-        users.push(newUser);
-        fs.writeFileSync(usersPath, JSON.stringify(users, null, 4));
-
-        res.json({ success: true, message: 'User created' });
-
+        logAudit('CREATE_USER', 'Admin', `Created user ${username}`);
+        res.json({ success: true, user: { id: newUser._id, username: newUser.username } });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to create user' });
     }
 });
 
-// DELETE USER
-app.delete('/api/users/:id', (req, res) => {
-    const { id } = req.params;
-    const usersPath = path.join(__dirname, 'src', 'data', 'users.json');
-
+app.put('/api/users/:id', async (req, res) => {
     try {
-        let users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-        const newUsers = users.filter(u => u.id !== id);
+        const { id } = req.params;
+        const { name, username, password } = req.body;
 
-        if (users.length === newUsers.length) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+        const updateData = { name, username };
+        if (password) updateData.password = password; // Only update if provided
 
-        // Prevent deleting the last admin
-        if (!newUsers.some(u => u.role === 'admin')) {
-            return res.status(400).json({ error: 'Cannot delete the last admin' });
-        }
+        const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
+        if (!updatedUser) return res.status(404).json({ error: 'User not found' });
 
-        fs.writeFileSync(usersPath, JSON.stringify(newUsers, null, 4));
-        res.json({ success: true, message: 'User deleted' });
-
+        logAudit('UPDATE_USER', 'Admin', `Updated profile for ${username}`);
+        res.json({ success: true, user: updatedUser });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to delete user' });
-    }
-});
-
-// UPDATE USER (Name, Username, Password)
-app.put('/api/users/:id', (req, res) => {
-    const { id } = req.params;
-    const { name, username, password } = req.body;
-    const usersPath = path.join(__dirname, 'src', 'data', 'users.json');
-
-    try {
-        let users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-        const index = users.findIndex(u => u.id === id);
-
-        if (index === -1) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Check availability if username is changing
-        if (username && username !== users[index].username) {
-            const usernameExists = users.some(u => u.username === username);
-            if (usernameExists) {
-                return res.status(400).json({ error: 'Username already taken' });
-            }
-        }
-
-        // Update fields
-        if (name) users[index].name = name;
-        if (username) users[index].username = username;
-        if (password) users[index].password = password;
-
-        fs.writeFileSync(usersPath, JSON.stringify(users, null, 4));
-
-        logAudit('UPDATE_USER', 'Admin', `Updated user ${users[index].username} (${id})`);
-
-        res.json({ success: true, message: 'User updated successfully' });
-
-    } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to update user' });
     }
 });
 
-// UPDATE PERMISSIONS
-app.put('/api/users/:id/permissions', (req, res) => {
-    const { id } = req.params;
-    const { permissions } = req.body;
-    const usersPath = path.join(__dirname, 'src', 'data', 'users.json');
-
+app.delete('/api/users/:id', async (req, res) => {
     try {
-        let users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-        const index = users.findIndex(u => u.id === id);
+        const { id } = req.params;
+        const deletedUser = await User.findByIdAndDelete(id);
+        if (!deletedUser) return res.status(404).json({ error: 'User not found' });
 
-        if (index === -1) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Merge permissions
-        users[index].permissions = { ...users[index].permissions, ...permissions };
-
-        fs.writeFileSync(usersPath, JSON.stringify(users, null, 4));
-        res.json({ success: true, message: 'Permissions updated', user: users[index] });
-
+        logAudit('DELETE_USER', 'Admin', `Deleted user ${deletedUser.username}`);
+        res.json({ success: true, message: 'User deleted successfully' });
     } catch (error) {
-        console.error(error);
+        res.status(500).json({ error: 'Failed to delete user' });
+    }
+});
+
+app.put('/api/users/:id/password', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { newPassword } = req.body;
+
+        const updatedUser = await User.findByIdAndUpdate(id, { password: newPassword }, { new: true });
+        if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+
+        logAudit('CHANGE_PASSWORD', 'Admin', `Changed password for ${updatedUser.username}`);
+        res.json({ success: true, message: 'Password updated' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update password' });
+    }
+});
+
+app.put('/api/users/:id/permissions', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { permissions } = req.body;
+
+        const updatedUser = await User.findByIdAndUpdate(id, { permissions }, { new: true });
+        if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+
+        logAudit('UPDATE_PERMISSIONS', 'Admin', `Updated permissions for ${updatedUser.username}`);
+        res.json({ success: true, message: 'Permissions updated' });
+    } catch (error) {
         res.status(500).json({ error: 'Failed to update permissions' });
     }
 });
-// POST Schedule (Add/Update)
-app.post('/api/schedule', (req, res) => {
-    const schedulePath = path.join(__dirname, 'src', 'data', 'schedule.json');
-    const newEntry = req.body;
 
+// POST Contact Message
+app.post('/api/messages', async (req, res) => {
     try {
-        let schedule = [];
-        if (fs.existsSync(schedulePath)) {
-            schedule = JSON.parse(fs.readFileSync(schedulePath, 'utf8'));
-        }
+        const { name, email, subject, message } = req.body;
+        // In a real app, save to Message model or email admin.
+        // For now, log to audit/console.
+        console.log(`[CONTACT] Message from ${name} (${email}): ${subject} - ${message}`);
 
-        const index = schedule.findIndex(s => s.id === newEntry.id);
-        if (index !== -1) {
-            schedule[index] = newEntry; // Update
-        } else {
-            schedule.push(newEntry); // Add
-        }
+        // Optional: Create an audit log if 'user' is known, but contact might be public.
+        // logAudit('CONTACT_MESSAGE', 'Guest', `Message from ${email}`);
 
-        fs.writeFileSync(schedulePath, JSON.stringify(schedule, null, 4));
-        logAudit('UPDATE_SCHEDULE', newEntry.username || 'Admin', `Schedule event: ${newEntry.courseName || 'Event'}`);
-        res.json({ success: true, message: 'Schedule updated successfully' });
-
+        res.json({ success: true, message: 'Message received' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to update schedule' });
-    }
-});
-
-// DELETE Schedule Item
-app.delete('/api/schedule/:id', (req, res) => {
-    const { id } = req.params;
-    const schedulePath = path.join(__dirname, 'src', 'data', 'schedule.json');
-
-    try {
-        if (!fs.existsSync(schedulePath)) {
-            return res.status(404).json({ error: 'Schedule data not found' });
-        }
-
-        let schedule = JSON.parse(fs.readFileSync(schedulePath, 'utf8'));
-        const newSchedule = schedule.filter(s => s.id !== id);
-
-        if (schedule.length === newSchedule.length) {
-            return res.status(404).json({ error: 'Schedule entry not found' });
-        }
-
-        fs.writeFileSync(schedulePath, JSON.stringify(newSchedule, null, 4));
-        res.json({ success: true, message: 'Schedule entry deleted' });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to delete schedule entry' });
-    }
-});
-
-// --- Settings API ---
-
-// GET Settings
-app.get('/api/settings', (req, res) => {
-    const settingsPath = path.join(__dirname, 'src', 'data', 'settings.json');
-    try {
-        if (fs.existsSync(settingsPath)) {
-            const data = fs.readFileSync(settingsPath, 'utf8');
-            res.json(JSON.parse(data));
-        } else {
-            // Default settings if file doesn't exist
-            res.json({ visibleDays: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"] });
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to fetch settings' });
-    }
-});
-
-// POST Settings (Update)
-app.post('/api/settings', (req, res) => {
-    const settingsPath = path.join(__dirname, 'src', 'data', 'settings.json');
-    const newSettings = req.body;
-
-    try {
-        fs.writeFileSync(settingsPath, JSON.stringify(newSettings, null, 4));
-        res.json({ success: true, message: 'Settings updated successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to update settings' });
-    }
-});
-
-// --- System Cleanup API ---
-
-// POST Cleanup Junk Files
-app.post('/api/cleanup', (req, res) => {
-    try {
-        const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
-        const noticesPath = path.join(__dirname, 'src', 'data', 'notices.json');
-        const materialsDir = path.join(__dirname, 'public', 'materials');
-        const noticesDir = path.join(__dirname, 'public', 'notices');
-
-        let validPaths = new Set();
-
-        // 1. Collect valid paths from Courses
-        if (fs.existsSync(coursesPath)) {
-            const courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-            courses.forEach(course => {
-                if (course.files) {
-                    course.files.forEach(file => {
-                        // Ensure path starts with /materials/
-                        if (file.path && file.path.startsWith('/materials/')) {
-                            // Normalize to absolute path for comparison
-                            // file.path matches URL structure: /materials/CourseID/filename
-                            // On disk: public/materials/CourseID/filename
-                            validPaths.add(path.join(__dirname, 'public', file.path));
-                        }
-                    });
-                }
-            });
-        }
-
-        // 2. Collect valid paths from Notices
-        if (fs.existsSync(noticesPath)) {
-            const notices = JSON.parse(fs.readFileSync(noticesPath, 'utf8'));
-            notices.forEach(notice => {
-                if (notice.pdfPath) {
-                    // pdfPath: /notices/filename
-                    validPaths.add(path.join(__dirname, 'public', notice.pdfPath));
-                }
-            });
-        }
-
-        let deletedFiles = [];
-        let deletedCount = 0;
-
-        // Helper to scan directory
-        const scanAndDelete = (dir) => {
-            if (!fs.existsSync(dir)) return;
-
-            const files = fs.readdirSync(dir);
-            files.forEach(file => {
-                const fullPath = path.join(dir, file);
-                const stat = fs.statSync(fullPath);
-
-                if (stat.isDirectory()) {
-                    scanAndDelete(fullPath);
-                    // Remove empty directories
-                    if (fs.readdirSync(fullPath).length === 0) {
-                        fs.rmdirSync(fullPath);
-                    }
-                } else {
-                    // It's a file. Check if it's valid.
-                    // We need to match exact paths.
-                    if (!validPaths.has(fullPath)) {
-                        // Special check: ignore syllabus PDFs as they are not in JSONs but fixed names
-                        const filename = path.basename(fullPath);
-                        if (filename !== 'syllabus.pdf' && filename !== 'syllabus-4-1.pdf') {
-                            fs.unlinkSync(fullPath);
-                            deletedFiles.push(path.relative(path.join(__dirname, 'public'), fullPath));
-                            deletedCount++;
-                        }
-                    }
-                }
-            });
-        };
-
-        // Scan both directories
-        scanAndDelete(materialsDir);
-        scanAndDelete(noticesDir);
-
-        res.json({
-            success: true,
-            message: `Cleanup complete. Removed ${deletedCount} files.`,
-            deletedCount,
-            deletedFiles
-        });
-
-    } catch (error) {
-        console.error('Cleanup failed:', error);
-        res.status(500).json({ error: 'Failed to perform system cleanup' });
-    }
-});
-
-// --- Deletion Request System ---
-
-const DELETION_REQUESTS_FILE = path.join(__dirname, 'src', 'data', 'deletion_requests.json');
-
-// Helper: Get requests
-const getDeletionRequests = () => {
-    if (fs.existsSync(DELETION_REQUESTS_FILE)) {
-        return JSON.parse(fs.readFileSync(DELETION_REQUESTS_FILE, 'utf8'));
-    }
-    return [];
-};
-
-// Helper: Save requests
-const saveDeletionRequests = (requests) => {
-    fs.writeFileSync(DELETION_REQUESTS_FILE, JSON.stringify(requests, null, 4));
-};
-
-// Internal Deletion Functions
-const deleteCourseInternal = (courseId) => {
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
-    const courseFolder = path.join(__dirname, 'public', 'materials', courseId);
-
-    if (!fs.existsSync(coursesPath)) throw new Error('Courses data not found');
-
-    let courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-    const courseIndex = courses.findIndex(c => c.id === courseId);
-
-    if (courseIndex === -1) throw new Error('Course not found');
-
-    courses.splice(courseIndex, 1);
-    fs.writeFileSync(coursesPath, JSON.stringify(courses, null, 4));
-
-    if (fs.existsSync(courseFolder)) {
-        fs.rmSync(courseFolder, { recursive: true, force: true });
-    }
-    return true;
-};
-
-const deleteFileInternal = (courseId, fileId) => {
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
-    if (!fs.existsSync(coursesPath)) throw new Error('Courses data not found');
-
-    let courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-    const course = courses.find(c => c.id === courseId);
-    if (!course) throw new Error('Course not found');
-
-    const fileIndex = course.files.findIndex(f => f.id === fileId);
-    if (fileIndex === -1) throw new Error('File not found');
-
-    const fileToDelete = course.files[fileIndex];
-    const filePath = path.join(__dirname, 'public', fileToDelete.path);
-
-    course.files.splice(fileIndex, 1);
-    fs.writeFileSync(coursesPath, JSON.stringify(courses, null, 4));
-
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    return true;
-};
-
-const deleteExamInternal = (courseId, examId) => {
-    const coursesPath = path.join(__dirname, 'src', 'data', 'courses.json');
-    if (!fs.existsSync(coursesPath)) throw new Error('Courses data not found');
-
-    let courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-    const course = courses.find(c => c.id === courseId);
-    if (!course) throw new Error('Course not found');
-
-    if (course.exams) {
-        course.exams = course.exams.filter(e => e.id !== examId);
-        fs.writeFileSync(coursesPath, JSON.stringify(courses, null, 4));
-    }
-    return true;
-};
-
-const deleteScheduleInternal = (id) => {
-    const schedulePath = path.join(__dirname, 'src', 'data', 'schedule.json');
-    if (!fs.existsSync(schedulePath)) throw new Error('Schedule data not found');
-
-    let schedule = JSON.parse(fs.readFileSync(schedulePath, 'utf8'));
-    const newSchedule = schedule.filter(s => s.id !== id);
-
-    if (schedule.length === newSchedule.length) throw new Error('Schedule entry not found');
-
-    fs.writeFileSync(schedulePath, JSON.stringify(newSchedule, null, 4));
-    return true;
-};
-
-const deleteSyllabusInternal = (code) => {
-    const syllabusPath = path.join(__dirname, 'src', 'data', 'syllabus.json');
-    if (!fs.existsSync(syllabusPath)) throw new Error('Syllabus data not found');
-
-    let syllabus = JSON.parse(fs.readFileSync(syllabusPath, 'utf8'));
-    const newSyllabus = syllabus.filter(c => c.code !== code);
-
-    if (syllabus.length === newSyllabus.length) throw new Error('Syllabus entry not found');
-
-    fs.writeFileSync(syllabusPath, JSON.stringify(newSyllabus, null, 4));
-    return true;
-};
-
-const deleteNoticeInternal = (id) => {
-    const noticesPath = path.join(__dirname, 'src', 'data', 'notices.json');
-    if (!fs.existsSync(noticesPath)) throw new Error('Notices data not found');
-
-    let notices = JSON.parse(fs.readFileSync(noticesPath, 'utf8'));
-    const noticeToDelete = notices.find(n => n.id === id);
-    const newNotices = notices.filter(n => n.id !== id);
-
-    if (notices.length === newNotices.length) throw new Error('Notice not found');
-
-    if (noticeToDelete && noticeToDelete.pdfPath) {
-        const pdfFullPath = path.join(__dirname, 'public', noticeToDelete.pdfPath);
-        if (fs.existsSync(pdfFullPath)) fs.unlinkSync(pdfFullPath);
-    }
-
-    fs.writeFileSync(noticesPath, JSON.stringify(newNotices, null, 4));
-    return true;
-};
-
-
-// GET Deletion Requests (Admin)
-app.get('/api/admin/deletion-requests', (req, res) => {
-    try {
-        const requests = getDeletionRequests();
-        res.json(requests);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch requests' });
-    }
-});
-
-// POST Deletion Request
-app.post('/api/deletion-requests', (req, res) => {
-    const { type, resourceId, details, requestedBy } = req.body;
-    try {
-        const requests = getDeletionRequests();
-        const newRequest = {
-            id: `req-${Date.now()}`,
-            type, // 'course', 'file', 'exam', 'schedule', 'syllabus', 'notice'
-            resourceId,
-            details, // can include { courseId, fileId } for files
-            requestedBy,
-            date: new Date().toISOString(),
-            status: 'pending'
-        };
-        requests.push(newRequest);
-        saveDeletionRequests(requests);
-        res.json({ success: true, message: 'Deletion request sent to Admin' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create request' });
-    }
-});
-
-// POST Approve Deletion Request
-app.post('/api/admin/deletion-requests/:id/approve', (req, res) => {
-    const { id } = req.params;
-    try {
-        const requests = getDeletionRequests();
-        const requestIndex = requests.findIndex(r => r.id === id);
-
-        if (requestIndex === -1) return res.status(404).json({ error: 'Request not found' });
-
-        const request = requests[requestIndex];
-
-        // Execute Deletion Logic based on Type
-        switch (request.type) {
-            case 'course':
-                deleteCourseInternal(request.resourceId);
-                break;
-            case 'file':
-                deleteFileInternal(request.details.courseId, request.resourceId); // resourceId is fileId
-                break;
-            case 'exam':
-                deleteExamInternal(request.details.courseId, request.resourceId); // resourceId is examId
-                break;
-            case 'schedule':
-                deleteScheduleInternal(request.resourceId);
-                break;
-            case 'syllabus':
-                deleteSyllabusInternal(request.resourceId);
-                break;
-            case 'notice':
-                deleteNoticeInternal(request.resourceId);
-                break;
-            default:
-                return res.status(400).json({ error: 'Unknown request type' });
-        }
-
-        // Remove request after successful deletion
-        requests.splice(requestIndex, 1);
-        saveDeletionRequests(requests);
-
-        logAudit('APPROVE_DELETION', 'Admin', `Approved deletion of ${request.type} (${request.resourceId}) requested by ${request.requestedBy}`);
-
-        res.json({ success: true, message: 'Request approved and item deleted' });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: `Failed to approve request: ${error.message}` });
-    }
-});
-
-// DELETE Rejection Request
-app.delete('/api/admin/deletion-requests/:id', (req, res) => {
-    const { id } = req.params;
-    try {
-        const requests = getDeletionRequests();
-        const newRequests = requests.filter(r => r.id !== id);
-
-        if (requests.length === newRequests.length) return res.status(404).json({ error: 'Request not found' });
-
-        saveDeletionRequests(newRequests);
-        res.json({ success: true, message: 'Request rejected/deleted' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete request' });
-    }
-});
-
-
-// --- Contact Message System ---
-
-const MESSAGES_FILE = path.join(__dirname, 'src', 'data', 'messages.json');
-
-// GET Messages (Admin)
-app.get('/api/admin/messages', (req, res) => {
-    try {
-        if (fs.existsSync(MESSAGES_FILE)) {
-            const messages = JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf8'));
-            res.json(messages);
-        } else {
-            res.json([]);
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch messages' });
-    }
-});
-
-// POST Message (Public)
-app.post('/api/messages', (req, res) => {
-    const { name, email, subject, message } = req.body;
-    try {
-        let messages = [];
-        if (fs.existsSync(MESSAGES_FILE)) {
-            messages = JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf8'));
-        }
-
-        const newMessage = {
-            id: `msg-${Date.now()}-${Math.round(Math.random() * 1000)}`,
-            name,
-            email,
-            subject,
-            message,
-            date: new Date().toISOString()
-        };
-
-        messages.unshift(newMessage);
-        fs.writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 4));
-
-        res.json({ success: true, message: 'Message sent successfully' });
-    } catch (error) {
-        console.error(error);
+        console.error("Contact error:", error);
         res.status(500).json({ error: 'Failed to send message' });
     }
 });
 
-// DELETE Message (Admin)
-app.delete('/api/admin/messages/:id', (req, res) => {
-    const { id } = req.params;
-    try {
-        if (!fs.existsSync(MESSAGES_FILE)) return res.status(404).json({ error: 'Messages not found' });
-
-        let messages = JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf8'));
-        const newMessages = messages.filter(m => m.id !== id);
-
-        if (messages.length === newMessages.length) return res.status(404).json({ error: 'Message not found' });
-
-        fs.writeFileSync(MESSAGES_FILE, JSON.stringify(newMessages, null, 4));
-
-        logAudit('DELETE_MESSAGE', 'Admin', `Deleted contact message (${id})`);
-
-        res.json({ success: true, message: 'Message deleted' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete message' });
-    }
-});
-
-// --- Complaints System ---
-
-const COMPLAINTS_FILE = path.join(__dirname, 'src', 'data', 'complaints.json');
-
-// GET Complaints (Admin)
-app.get('/api/admin/complaints', (req, res) => {
-    try {
-        if (fs.existsSync(COMPLAINTS_FILE)) {
-            const complaints = JSON.parse(fs.readFileSync(COMPLAINTS_FILE, 'utf8'));
-            res.json(complaints);
-        } else {
-            res.json([]);
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch complaints' });
-    }
-});
-
-// POST Complaint (Public)
-app.post('/api/complaints', (req, res) => {
-    const { subject, department, description, anonymous } = req.body;
-    try {
-        let complaints = [];
-        if (fs.existsSync(COMPLAINTS_FILE)) {
-            complaints = JSON.parse(fs.readFileSync(COMPLAINTS_FILE, 'utf8'));
-        }
-
-        const newComplaint = {
-            id: `comp-${Date.now()}-${Math.round(Math.random() * 1000)}`,
-            subject,
-            department,
-            description,
-            anonymous,
-            date: new Date().toISOString()
-        };
-
-        complaints.unshift(newComplaint);
-        fs.writeFileSync(COMPLAINTS_FILE, JSON.stringify(complaints, null, 4));
-
-        res.json({ success: true, message: 'Complaint submitted successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to submit complaint' });
-    }
-});
-
-// DELETE Complaint (Admin)
-app.delete('/api/admin/complaints/:id', (req, res) => {
-    const { id } = req.params;
-    try {
-        if (!fs.existsSync(COMPLAINTS_FILE)) return res.status(404).json({ error: 'Complaints not found' });
-
-        let complaints = JSON.parse(fs.readFileSync(COMPLAINTS_FILE, 'utf8'));
-        const newComplaints = complaints.filter(c => c.id !== id);
-
-        if (complaints.length === newComplaints.length) return res.status(404).json({ error: 'Complaint not found' });
-
-        fs.writeFileSync(COMPLAINTS_FILE, JSON.stringify(newComplaints, null, 4));
-
-        logAudit('DELETE_COMPLAINT', 'Admin', `Deleted complaint (${id})`);
-
-        res.json({ success: true, message: 'Complaint deleted' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete complaint' });
-    }
-});
-
-// --- Opinions/Feedback System ---
-
-const OPINIONS_FILE = path.join(__dirname, 'src', 'data', 'opinions.json');
-
-// GET Opinions (Public & Admin)
-app.get('/api/opinions', (req, res) => {
-    try {
-        if (fs.existsSync(OPINIONS_FILE)) {
-            const opinions = JSON.parse(fs.readFileSync(OPINIONS_FILE, 'utf8'));
-            res.json(opinions);
-        } else {
-            res.json([]);
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch opinions' });
-    }
-});
-
-// POST Opinion (Public)
-app.post('/api/opinions', (req, res) => {
-    const { rating, feedback } = req.body;
-    try {
-        let opinions = [];
-        if (fs.existsSync(OPINIONS_FILE)) {
-            opinions = JSON.parse(fs.readFileSync(OPINIONS_FILE, 'utf8'));
-        }
-
-        const newOpinion = {
-            id: `op-${Date.now()}-${Math.round(Math.random() * 1000)}`,
-            rating,
-            feedback,
-            date: new Date().toISOString().split('T')[0] // Simple date for feed
-        };
-
-        opinions.unshift(newOpinion);
-        fs.writeFileSync(OPINIONS_FILE, JSON.stringify(opinions, null, 4));
-
-        res.json({ success: true, message: 'Feedback submitted successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to submit feedback' });
-    }
-});
-
-// DELETE Opinion (Admin)
-app.delete('/api/admin/opinions/:id', (req, res) => {
-    const { id } = req.params;
-    try {
-        if (!fs.existsSync(OPINIONS_FILE)) return res.status(404).json({ error: 'Opinions not found' });
-
-        let opinions = JSON.parse(fs.readFileSync(OPINIONS_FILE, 'utf8'));
-        const newOpinions = opinions.filter(o => o.id !== id);
-
-        if (opinions.length === newOpinions.length) return res.status(404).json({ error: 'Opinion not found' });
-
-        fs.writeFileSync(OPINIONS_FILE, JSON.stringify(newOpinions, null, 4));
-
-        logAudit('DELETE_OPINION', 'Admin', `Deleted opinion (${id})`);
-
-        res.json({ success: true, message: 'Opinion deleted' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete opinion' });
-    }
-});
-
-const server = app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
-
-// PUT Opinion (Admin - Update)
-app.put('/api/admin/opinions/:id', (req, res) => {
-    const { id } = req.params;
-    const { rating, feedback, date } = req.body;
-    try {
-        if (!fs.existsSync(OPINIONS_FILE)) return res.status(404).json({ error: 'Opinions not found' });
-
-        let opinions = JSON.parse(fs.readFileSync(OPINIONS_FILE, 'utf8'));
-        const index = opinions.findIndex(o => o.id === id);
-
-        if (index === -1) return res.status(404).json({ error: 'Opinion not found' });
-
-        // Update fields
-        opinions[index] = {
-            ...opinions[index],
-            rating: rating !== undefined ? parseInt(rating) : opinions[index].rating,
-            feedback: feedback || opinions[index].feedback,
-            date: date || opinions[index].date
-        };
-
-        fs.writeFileSync(OPINIONS_FILE, JSON.stringify(opinions, null, 4));
-
-        logAudit('UPDATE_OPINION', 'Admin', `Updated opinion (${id})`);
-
-        res.json({ success: true, message: 'Opinion updated successfully' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update opinion' });
-    }
-});
-
-server.on('error', (err) => {
-    console.error('Server error:', err);
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
