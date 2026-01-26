@@ -1,29 +1,28 @@
 import mongoose from 'mongoose';
 
-const fileSchema = new mongoose.Schema({
-    id: String, // Keep original ID for frontend compatibility if needed
+const FileSchema = new mongoose.Schema({
     name: String,
-    type: String,
-    path: String, // Cloudinary URL
-    publicId: String, // Cloudinary Public ID
+    type: String, // 'image' or 'pdf'
+    url: String, // Cloudinary URL
+    publicId: String, // Cloudinary Public ID for deletion
     uploadedBy: String,
-    uploadDate: Date
+    uploadDate: { type: Date, default: Date.now }
 });
 
-const examSchema = new mongoose.Schema({
-    id: String,
+const ExamSchema = new mongoose.Schema({
     title: String,
     date: String,
     time: String,
     syllabus: String
 });
 
-const courseSchema = new mongoose.Schema({
-    id: { type: String, unique: true }, // Course ID (e.g., CSE-101)
-    name: String,
+const CourseSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true }, // Keeping string ID for compatibility
+    name: { type: String, required: true },
     instructor: String,
-    files: [fileSchema],
-    exams: [examSchema]
+    files: [FileSchema],
+    exams: [ExamSchema],
+    order: { type: Number, default: 0 } // For drag and drop reordering
 }, { timestamps: true });
 
-export default mongoose.model('Course', courseSchema);
+export default mongoose.models.Course || mongoose.model('Course', CourseSchema);

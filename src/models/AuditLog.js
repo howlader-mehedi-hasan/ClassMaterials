@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 
-const auditLogSchema = new mongoose.Schema({
-    originalId: String, // For migration
+const AuditLogSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true },
     action: String,
     username: String,
     details: String,
     date: { type: Date, default: Date.now }
-}, { timestamps: true });
+});
 
-export default mongoose.model('AuditLog', auditLogSchema);
+export default mongoose.models.AuditLog || mongoose.model('AuditLog', AuditLogSchema);

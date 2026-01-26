@@ -1,12 +1,13 @@
 import mongoose from 'mongoose';
 
-const noticeSchema = new mongoose.Schema({
-    id: { type: String, unique: true }, // Custom ID from frontend
+const NoticeSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true },
     title: String,
     date: String,
-    pdfPath: String, // Cloudinary URL
-    publicId: String, // Cloudinary Public ID
-    username: String
-}, { timestamps: true });
+    pdfUrl: String, // Cloudinary URL
+    publicId: String, // Cloudinary Public ID for deletion
+    username: String,
+    createdAt: { type: Date, default: Date.now }
+});
 
-export default mongoose.model('Notice', noticeSchema);
+export default mongoose.models.Notice || mongoose.model('Notice', NoticeSchema);

@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 
-const opinionSchema = new mongoose.Schema({
-    originalId: String,
+const OpinionSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true },
     rating: Number,
     feedback: String,
     date: String
-}, { timestamps: true });
+});
 
-export default mongoose.model('Opinion', opinionSchema);
+export default mongoose.models.Opinion || mongoose.model('Opinion', OpinionSchema);

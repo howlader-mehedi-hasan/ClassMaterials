@@ -1,11 +1,10 @@
 import mongoose from 'mongoose';
 
-const syllabusSchema = new mongoose.Schema({
-    code: { type: String, unique: true },
+const SyllabusSchema = new mongoose.Schema({
+    code: { type: String, required: true, unique: true },
     title: String,
-    credit: String,
-    type: String,
-    // Add other fields as discovered from JSON structure, but start flexible
-}, { strict: false, timestamps: true });
+    credit: Number,
+    type: String // Theory / Lab / Project
+});
 
-export default mongoose.model('Syllabus', syllabusSchema);
+export default mongoose.models.Syllabus || mongoose.model('Syllabus', SyllabusSchema);

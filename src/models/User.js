@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
 
-const userSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true }, // Keeping string ID for compatibility
     username: { type: String, required: true, unique: true },
-    password: { type: String, required: true }, // Store as is for migration compatibility
-    name: { type: String },
-    role: { type: String, default: 'user' },
+    password: { type: String, required: true }, // In a real app please hash this!
+    name: String,
+    role: { type: String, default: 'editor' },
     permissions: {
         courses_edit: { type: Boolean, default: false },
         syllabus_edit: { type: Boolean, default: false },
@@ -14,6 +15,6 @@ const userSchema = new mongoose.Schema({
         exams_edit: { type: Boolean, default: false },
         course_materials_edit: { type: Boolean, default: false }
     }
-}, { timestamps: true });
+});
 
-export default mongoose.model('User', userSchema);
+export default mongoose.models.User || mongoose.model('User', UserSchema);

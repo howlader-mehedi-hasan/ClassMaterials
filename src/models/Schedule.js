@@ -1,18 +1,12 @@
 import mongoose from 'mongoose';
 
-const scheduleSchema = new mongoose.Schema({
-    id: { type: String, unique: true },
+const ScheduleSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true },
     day: String,
-    startTime: String,
-    endTime: String,
-    type: String,
-    courseId: String,
-    courseName: String,
-    instructor: String,
+    time: String,
+    subject: String,
     room: String,
-    recurrence: String,
-    color: String,
     isCancelled: { type: Boolean, default: false }
-}, { timestamps: true });
+});
 
-export default mongoose.model('Schedule', scheduleSchema);
+export default mongoose.models.Schedule || mongoose.model('Schedule', ScheduleSchema);
